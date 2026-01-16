@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Plus, ListTodo, Coins, Clock, PartyPopper, Wallet } from 'lucide-react';
+import { Plus, ListTodo, Coins, Clock, PartyPopper, Wallet, Shield } from 'lucide-react';
 import { useAccount } from 'wagmi';
+import { formatEther } from 'viem';
 import { Navbar } from '@/components/Navbar';
 import { TaskCard, Task } from '@/components/TaskCard';
 import { StatsCard } from '@/components/StatsCard';
@@ -15,15 +16,31 @@ import { useToast } from '@/components/Toast';
 function TaskCardWithData({
   taskId,
   index,
+  isTeamLead,
   onComplete,
-  isCompleting
+  onVerify,
+  onClaim,
+  isCompleting,
+  isVerifying,
+  isClaiming
 }: {
   taskId: bigint;
   index: number;
+  isTeamLead: boolean;
   onComplete: (id: bigint) => void;
+  onVerify: (id: bigint) => void;
+  onClaim: (id: bigint) => void;
   isCompleting: boolean;
+  isVerifying: boolean;
+  isClaiming: boolean;
 }) {
-  const { task, isLoading } = useTask(taskId);
+  const { task, isLoading, refetch } = useTask(taskId);
+
+  // Refetch task data periodically to update status
+  useEffect(() => {
+    const interval = setInterval(() => refetch(), 10000);
+    return () => clearInterval(interval);
+  }, [refetch]);
 
   if (isLoading || !task) {
     return (
@@ -38,8 +55,13 @@ function TaskCardWithData({
     <TaskCard
       task={task}
       index={index}
+      isTeamLead={isTeamLead}
       onComplete={onComplete}
+      onVerify={onVerify}
+      onClaim={onClaim}
       isCompleting={isCompleting}
+      isVerifying={isVerifying}
+      isClaiming={isClaiming}
     />
   );
 }
@@ -48,11 +70,13 @@ export default function Home() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const { address, isConnected } = useAccount();
   const { showToast, updateToast } = useToast();
-  const [completeToastId, setCompleteToastId] = useState<string | null>(null);
+  const [actionToastId, setActionToastId] = useState<string | null>(null);
 
   const {
-    tasks,
     taskCount,
+    partyFund,
+    teamLead,
+    minStake,
     createTask,
     isCreating,
     isCreateSuccess,
@@ -63,38 +87,67 @@ export default function Home() {
     isCompleteSuccess,
     completeError,
     resetComplete,
+    verifyTask,
+    isVerifying,
+    isVerifySuccess,
+    verifyError,
+    resetVerify,
+    claimStake,
+    isClaiming,
+    isClaimSuccess,
+    claimError,
+    resetClaim,
   } = useToDo();
 
-  // Handle complete success
+  const isTeamLead = address && teamLead && address.toLowerCase() === teamLead.toLowerCase();
+
+  // Handle action success/error
   useEffect(() => {
     if (isCompleteSuccess) {
-      if (completeToastId) {
-        updateToast(completeToastId, 'success', 'Task Completed!', 'Your task has been marked as done');
-      }
-      setCompleteToastId(null);
+      if (actionToastId) updateToast(actionToastId, 'success', 'Task Completed!', 'Awaiting team lead verification');
+      setActionToastId(null);
       resetComplete();
     }
-  }, [isCompleteSuccess, completeToastId, updateToast, resetComplete]);
+    if (isVerifySuccess) {
+      if (actionToastId) updateToast(actionToastId, 'success', 'Task Verified!', 'Owner can now claim their stake');
+      setActionToastId(null);
+      resetVerify();
+    }
+    if (isClaimSuccess) {
+      if (actionToastId) updateToast(actionToastId, 'success', 'Stake Claimed!', 'MNT returned to your wallet');
+      setActionToastId(null);
+      resetClaim();
+    }
+  }, [isCompleteSuccess, isVerifySuccess, isClaimSuccess, actionToastId, updateToast, resetComplete, resetVerify, resetClaim]);
 
-  // Handle complete error
   useEffect(() => {
-    if (completeError) {
-      if (completeToastId) {
-        updateToast(completeToastId, 'error', 'Failed to Complete', completeError.message.slice(0, 50));
-      }
-      setCompleteToastId(null);
-      resetComplete();
+    const error = completeError || verifyError || claimError;
+    if (error) {
+      if (actionToastId) updateToast(actionToastId, 'error', 'Transaction Failed', error.message.slice(0, 50));
+      setActionToastId(null);
+      if (completeError) resetComplete();
+      if (verifyError) resetVerify();
+      if (claimError) resetClaim();
     }
-  }, [completeError, completeToastId, updateToast, resetComplete]);
+  }, [completeError, verifyError, claimError, actionToastId, updateToast, resetComplete, resetVerify, resetClaim]);
 
   const handleComplete = (taskId: bigint) => {
     const id = showToast('loading', 'Completing Task...', 'Please confirm in your wallet');
-    setCompleteToastId(id);
+    setActionToastId(id);
     completeTask(taskId);
   };
 
-  // Calculate stats
-  const pendingTasks = tasks.filter(t => !t.isCompleted).length;
+  const handleVerify = (taskId: bigint) => {
+    const id = showToast('loading', 'Verifying Task...', 'Please confirm in your wallet');
+    setActionToastId(id);
+    verifyTask(taskId);
+  };
+
+  const handleClaim = (taskId: bigint) => {
+    const id = showToast('loading', 'Claiming Stake...', 'Please confirm in your wallet');
+    setActionToastId(id);
+    claimStake(taskId);
+  };
 
   return (
     <div className="min-h-screen bg-zinc-950">
@@ -112,11 +165,17 @@ export default function Home() {
           transition={{ duration: 0.6 }}
           className="mb-10"
         >
-          <h1 className="text-4xl font-bold text-white mb-2">
-            Team Dashboard
-          </h1>
+          <div className="flex items-center gap-3 mb-2">
+            <h1 className="text-4xl font-bold text-white">Team Dashboard</h1>
+            {isTeamLead && (
+              <span className="px-3 py-1 text-sm bg-purple-500/20 text-purple-400 rounded-full flex items-center gap-1">
+                <Shield className="w-4 h-4" />
+                Team Lead
+              </span>
+            )}
+          </div>
           <p className="text-zinc-400">
-            Track tasks, manage stakes, and keep your team accountable.
+            Stake MNT on tasks. Complete before deadline or fund the party!
           </p>
         </motion.div>
 
@@ -131,27 +190,27 @@ export default function Home() {
             index={0}
           />
           <StatsCard
-            title="Pending"
-            value={pendingTasks}
-            subtitle="Tasks to complete"
-            icon={Clock}
-            color="yellow"
+            title="Min Stake"
+            value={`${formatEther(minStake)} MNT`}
+            subtitle="Per task"
+            icon={Coins}
+            color="green"
             index={1}
           />
           <StatsCard
-            title="Completed"
-            value={taskCount - pendingTasks}
-            subtitle="Tasks done"
-            icon={Coins}
-            color="green"
-            index={2}
-          />
-          <StatsCard
             title="Party Fund"
-            value="0.00 MNT"
+            value={`${formatEther(partyFund)} MNT`}
             subtitle="From missed deadlines"
             icon={PartyPopper}
             color="purple"
+            index={2}
+          />
+          <StatsCard
+            title="Status"
+            value={isConnected ? 'Connected' : 'Disconnected'}
+            subtitle={isConnected ? `${address?.slice(0, 6)}...${address?.slice(-4)}` : 'Connect wallet'}
+            icon={Wallet}
+            color="yellow"
             index={3}
           />
         </div>
@@ -208,7 +267,7 @@ export default function Home() {
                 <ListTodo className="w-12 h-12 text-zinc-600 mx-auto mb-3" />
                 <h3 className="text-lg font-medium text-white mb-1">No tasks yet</h3>
                 <p className="text-zinc-400 text-sm">
-                  Create your first task to get started!
+                  Create your first task and stake some MNT!
                 </p>
               </motion.div>
             )}
@@ -221,8 +280,13 @@ export default function Home() {
                     key={i}
                     taskId={BigInt(i)}
                     index={i}
+                    isTeamLead={!!isTeamLead}
                     onComplete={handleComplete}
+                    onVerify={handleVerify}
+                    onClaim={handleClaim}
                     isCompleting={isCompleting}
+                    isVerifying={isVerifying}
+                    isClaiming={isClaiming}
                   />
                 ))}
               </div>
@@ -240,6 +304,7 @@ export default function Home() {
         isSuccess={isCreateSuccess}
         error={createError}
         onReset={resetCreate}
+        minStake={minStake}
       />
     </div>
   );

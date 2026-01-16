@@ -6,18 +6,21 @@ import {ToDo} from "../src/ToDo.sol";
 
 /**
  * @title DeployToDo
- * @notice Deployment script for the ToDo contract on Mantle Sepolia
- * @dev Run with: forge script script/DeployToDo.s.sol --rpc-url https://rpc.sepolia.mantle.xyz --broadcast --private-key <YOUR_PRIVATE_KEY>
+ * @notice Deployment script for ToDo contract on Mantle Sepolia
+ * @dev Run: forge script script/DeployToDo.s.sol --rpc-url https://rpc.sepolia.mantle.xyz --broadcast --private-key <KEY>
  */
 contract DeployToDo is Script {
     function run() external returns (ToDo) {
-        // Start broadcasting transactions
+        // The deployer becomes the team lead
+        address teamLead = msg.sender;
+
         vm.startBroadcast();
 
-        // Deploy the ToDo contract
-        ToDo todo = new ToDo();
+        ToDo todo = new ToDo(teamLead);
 
         console.log("ToDo deployed at:", address(todo));
+        console.log("Team Lead:", teamLead);
+        console.log("Min Stake:", todo.MIN_STAKE());
 
         vm.stopBroadcast();
 

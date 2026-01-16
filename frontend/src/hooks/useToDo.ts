@@ -1,24 +1,48 @@
 'use client';
 
 import { useReadContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
+import { parseEther } from 'viem';
 import { TODO_ABI, TODO_CONTRACT_ADDRESS } from '@/lib/abi';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 
 export interface Task {
     id: bigint;
     content: string;
     owner: `0x${string}`;
+    stakedAmount: bigint;
+    deadline: bigint;
     isCompleted: boolean;
+    isVerified: boolean;
 }
 
+// Main hook for ToDo contract interactions
 export function useToDo() {
-    const [tasks, setTasks] = useState<Task[]>([]);
-
     // Read: Get total task count
     const { data: nextTaskId, refetch: refetchTaskCount } = useReadContract({
         address: TODO_CONTRACT_ADDRESS,
         abi: TODO_ABI,
         functionName: 'nextTaskId',
+    });
+
+    // Read: Get party fund
+    const { data: partyFund, refetch: refetchPartyFund } = useReadContract({
+        address: TODO_CONTRACT_ADDRESS,
+        abi: TODO_ABI,
+        functionName: 'partyFund',
+    });
+
+    // Read: Get team lead
+    const { data: teamLead } = useReadContract({
+        address: TODO_CONTRACT_ADDRESS,
+        abi: TODO_ABI,
+        functionName: 'teamLead',
+    });
+
+    // Read: Get min stake
+    const { data: minStake } = useReadContract({
+        address: TODO_CONTRACT_ADDRESS,
+        abi: TODO_ABI,
+        functionName: 'MIN_STAKE',
     });
 
     // Write: Create Task
@@ -39,56 +63,53 @@ export function useToDo() {
         reset: resetComplete,
     } = useWriteContract();
 
-    // Wait for create transaction
+    // Write: Verify Task
+    const {
+        writeContract: writeVerifyTask,
+        data: verifyTxHash,
+        isPending: isVerifying,
+        error: verifyError,
+        reset: resetVerify,
+    } = useWriteContract();
+
+    // Write: Claim Stake
+    const {
+        writeContract: writeClaimStake,
+        data: claimTxHash,
+        isPending: isClaiming,
+        error: claimError,
+        reset: resetClaim,
+    } = useWriteContract();
+
+    // Transaction receipts
     const { isLoading: isCreateConfirming, isSuccess: isCreateSuccess } =
-        useWaitForTransactionReceipt({
-            hash: createTxHash,
-        });
+        useWaitForTransactionReceipt({ hash: createTxHash });
 
-    // Wait for complete transaction
     const { isLoading: isCompleteConfirming, isSuccess: isCompleteSuccess } =
-        useWaitForTransactionReceipt({
-            hash: completeTxHash,
-        });
+        useWaitForTransactionReceipt({ hash: completeTxHash });
 
-    // Fetch all tasks when nextTaskId changes
-    useEffect(() => {
-        async function fetchTasks() {
-            if (!nextTaskId || nextTaskId === BigInt(0)) {
-                setTasks([]);
-                return;
-            }
+    const { isLoading: isVerifyConfirming, isSuccess: isVerifySuccess } =
+        useWaitForTransactionReceipt({ hash: verifyTxHash });
 
-            const fetchedTasks: Task[] = [];
-            for (let i = BigInt(0); i < nextTaskId; i++) {
-                // We'll use individual reads - in production, consider multicall
-                fetchedTasks.push({
-                    id: i,
-                    content: '',
-                    owner: '0x0000000000000000000000000000000000000000',
-                    isCompleted: false,
-                });
-            }
-            setTasks(fetchedTasks);
-        }
-
-        fetchTasks();
-    }, [nextTaskId]);
+    const { isLoading: isClaimConfirming, isSuccess: isClaimSuccess } =
+        useWaitForTransactionReceipt({ hash: claimTxHash });
 
     // Refetch on successful transactions
     useEffect(() => {
-        if (isCreateSuccess || isCompleteSuccess) {
+        if (isCreateSuccess || isCompleteSuccess || isVerifySuccess || isClaimSuccess) {
             refetchTaskCount();
+            refetchPartyFund();
         }
-    }, [isCreateSuccess, isCompleteSuccess, refetchTaskCount]);
+    }, [isCreateSuccess, isCompleteSuccess, isVerifySuccess, isClaimSuccess, refetchTaskCount, refetchPartyFund]);
 
-    // Create task function
-    const createTask = (content: string) => {
+    // Create task function (payable)
+    const createTask = (content: string, deadline: bigint, stakeAmount: string) => {
         writeCreateTask({
             address: TODO_CONTRACT_ADDRESS,
             abi: TODO_ABI,
             functionName: 'createTask',
-            args: [content],
+            args: [content, deadline],
+            value: parseEther(stakeAmount),
         });
     };
 
@@ -102,10 +123,32 @@ export function useToDo() {
         });
     };
 
+    // Verify task function (team lead only)
+    const verifyTask = (taskId: bigint) => {
+        writeVerifyTask({
+            address: TODO_CONTRACT_ADDRESS,
+            abi: TODO_ABI,
+            functionName: 'verifyTask',
+            args: [taskId],
+        });
+    };
+
+    // Claim stake function
+    const claimStake = (taskId: bigint) => {
+        writeClaimStake({
+            address: TODO_CONTRACT_ADDRESS,
+            abi: TODO_ABI,
+            functionName: 'claimStake',
+            args: [taskId],
+        });
+    };
+
     return {
         // Data
-        tasks,
         taskCount: nextTaskId ? Number(nextTaskId) : 0,
+        partyFund: partyFund ?? BigInt(0),
+        teamLead: teamLead as `0x${string}` | undefined,
+        minStake: minStake ?? BigInt(0),
 
         // Create Task
         createTask,
@@ -121,8 +164,25 @@ export function useToDo() {
         completeError,
         resetComplete,
 
+        // Verify Task
+        verifyTask,
+        isVerifying: isVerifying || isVerifyConfirming,
+        isVerifySuccess,
+        verifyError,
+        resetVerify,
+
+        // Claim Stake
+        claimStake,
+        isClaiming: isClaiming || isClaimConfirming,
+        isClaimSuccess,
+        claimError,
+        resetClaim,
+
         // Refetch
-        refetch: refetchTaskCount,
+        refetch: () => {
+            refetchTaskCount();
+            refetchPartyFund();
+        },
     };
 }
 
