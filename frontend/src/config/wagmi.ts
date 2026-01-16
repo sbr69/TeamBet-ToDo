@@ -44,7 +44,7 @@ const connectors = connectorsForWallets(
     },
   ],
   {
-    appName: 'ToDo dApp',
+    appName: 'To-Do Team Bet',
     projectId,
   }
 );

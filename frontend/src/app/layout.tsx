@@ -9,7 +9,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "ToDo dApp | Micro-Incentive Task Management",
+  title: "To-Do Team Bet",
   description: "A decentralized to-do list where teams stake MNT to stay accountable. Complete tasks on time or fund the team party!",
   keywords: ["Web3", "Mantle", "ToDo", "dApp", "Blockchain", "Task Management"],
 };

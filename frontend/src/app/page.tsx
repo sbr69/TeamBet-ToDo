@@ -9,6 +9,7 @@ import { Navbar } from '@/components/Navbar';
 import { TaskCard, Task } from '@/components/TaskCard';
 import { StatsCard } from '@/components/StatsCard';
 import { CreateTaskModal } from '@/components/CreateTaskModal';
+import { TaskDetailModal } from '@/components/TaskDetailModal';
 import { useToDo, useTask } from '@/hooks/useToDo';
 import { useToast } from '@/components/Toast';
 
@@ -17,6 +18,7 @@ function TaskCardWithData({
   taskId,
   index,
   isTeamLead,
+  onClick,
   onComplete,
   onVerify,
   onClaim,
@@ -29,6 +31,7 @@ function TaskCardWithData({
   taskId: bigint;
   index: number;
   isTeamLead: boolean;
+  onClick: (task: Task) => void;
   onComplete: (id: bigint) => void;
   onVerify: (id: bigint) => void;
   onClaim: (id: bigint) => void;
@@ -60,6 +63,7 @@ function TaskCardWithData({
       task={task}
       index={index}
       isTeamLead={isTeamLead}
+      onClick={() => onClick(task)}
       onComplete={onComplete}
       onVerify={onVerify}
       onClaim={onClaim}
@@ -74,6 +78,8 @@ function TaskCardWithData({
 
 export default function Home() {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const { address, isConnected } = useAccount();
   const { showToast, updateToast } = useToast();
   const [actionToastId, setActionToastId] = useState<string | null>(null);
@@ -189,6 +195,11 @@ export default function Home() {
     withdrawPartyFund();
   };
 
+  const handleTaskClick = (task: Task) => {
+    setSelectedTask(task);
+    setIsDetailModalOpen(true);
+  };
+
   return (
     <div className="min-h-screen bg-zinc-950">
       <Navbar />
@@ -283,34 +294,36 @@ export default function Home() {
                 Active Tasks
               </motion.h2>
 
-              <motion.button
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.5, delay: 0.3 }}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => setIsModalOpen(true)}
-                className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-green-500 to-emerald-600 text-white font-medium rounded-xl hover:from-green-600 hover:to-emerald-700 transition-all shadow-lg shadow-green-500/25"
-              >
-                <Plus className="w-5 h-5" />
-                Create Task
-              </motion.button>
+              <div className="flex items-center gap-3">
+                {isTeamLead && partyFund > BigInt(0) && (
+                  <motion.button
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.5, delay: 0.4 }}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={handleWithdraw}
+                    disabled={isWithdrawing}
+                    className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-purple-500 to-pink-600 text-white font-medium rounded-xl hover:from-purple-600 hover:to-pink-700 transition-all shadow-lg shadow-purple-500/25 disabled:opacity-50"
+                  >
+                    <PartyPopper className="w-5 h-5" />
+                    {isWithdrawing ? 'Withdrawing...' : 'Withdraw Fund'}
+                  </motion.button>
+                )}
 
-              {isTeamLead && partyFund > BigInt(0) && (
                 <motion.button
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.5, delay: 0.4 }}
+                  transition={{ duration: 0.5, delay: 0.3 }}
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
-                  onClick={handleWithdraw}
-                  disabled={isWithdrawing}
-                  className="ml-3 flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-purple-500 to-pink-600 text-white font-medium rounded-xl hover:from-purple-600 hover:to-pink-700 transition-all shadow-lg shadow-purple-500/25 disabled:opacity-50"
+                  onClick={() => setIsModalOpen(true)}
+                  className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-green-500 to-emerald-600 text-white font-medium rounded-xl hover:from-green-600 hover:to-emerald-700 transition-all shadow-lg shadow-green-500/25"
                 >
-                  <PartyPopper className="w-5 h-5" />
-                  {isWithdrawing ? 'Withdrawing...' : 'Withdraw Fund'}
+                  <Plus className="w-5 h-5" />
+                  Create Task
                 </motion.button>
-              )}
+              </div>
             </div>
 
             {/* Empty State */}
@@ -337,6 +350,7 @@ export default function Home() {
                     taskId={BigInt(i)}
                     index={i}
                     isTeamLead={!!isTeamLead}
+                    onClick={handleTaskClick}
                     onComplete={handleComplete}
                     onVerify={handleVerify}
                     onClaim={handleClaim}
@@ -363,6 +377,23 @@ export default function Home() {
         error={createError}
         onReset={resetCreate}
         minStake={minStake}
+      />
+
+      {/* Task Detail Modal */}
+      <TaskDetailModal
+        task={selectedTask}
+        isOpen={isDetailModalOpen}
+        onClose={() => setIsDetailModalOpen(false)}
+        isTeamLead={!!isTeamLead}
+        isOwner={!!(address && selectedTask && address.toLowerCase() === selectedTask.owner.toLowerCase())}
+        onComplete={handleComplete}
+        onVerify={handleVerify}
+        onClaim={handleClaim}
+        onForfeit={handleForfeit}
+        isCompleting={isCompleting}
+        isVerifying={isVerifying}
+        isClaiming={isClaiming}
+        isForfeiting={isForfeiting}
       />
     </div>
   );

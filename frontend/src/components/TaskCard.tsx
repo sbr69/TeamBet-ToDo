@@ -20,6 +20,7 @@ interface TaskCardProps {
     task: Task;
     index: number;
     isTeamLead?: boolean;
+    onClick?: () => void;
     onComplete?: (taskId: bigint) => void;
     onVerify?: (taskId: bigint) => void;
     onClaim?: (taskId: bigint) => void;
@@ -98,6 +99,7 @@ export function TaskCard({
     task,
     index,
     isTeamLead = false,
+    onClick,
     onComplete,
     onVerify,
     onClaim,
@@ -126,8 +128,9 @@ export function TaskCard({
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, delay: index * 0.1 }}
             whileHover={{ scale: 1.02, y: -4 }}
+            onClick={onClick}
             className={clsx(
-                'group relative p-5 rounded-2xl border transition-all duration-300',
+                'group relative p-5 rounded-2xl border transition-all duration-300 cursor-pointer',
                 'bg-zinc-900/50 backdrop-blur-sm border-zinc-800',
                 'hover:border-zinc-700 hover:bg-zinc-900/80'
             )}
