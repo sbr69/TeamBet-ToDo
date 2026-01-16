@@ -1,25 +1,73 @@
 'use client';
 
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Plus, Coins, Calendar, FileText } from 'lucide-react';
-import { useState } from 'react';
+import { X, Plus, FileText, Loader2 } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { useToast } from './Toast';
 
 interface CreateTaskModalProps {
     isOpen: boolean;
     onClose: () => void;
+    onSubmit: (content: string) => void;
+    isCreating: boolean;
+    isSuccess: boolean;
+    error: Error | null;
+    onReset: () => void;
 }
 
-export function CreateTaskModal({ isOpen, onClose }: CreateTaskModalProps) {
-    const [title, setTitle] = useState('');
-    const [description, setDescription] = useState('');
-    const [stakeAmount, setStakeAmount] = useState('');
-    const [deadline, setDeadline] = useState('');
+export function CreateTaskModal({
+    isOpen,
+    onClose,
+    onSubmit,
+    isCreating,
+    isSuccess,
+    error,
+    onReset
+}: CreateTaskModalProps) {
+    const [content, setContent] = useState('');
+    const { showToast, updateToast } = useToast();
+    const [toastId, setToastId] = useState<string | null>(null);
+
+    // Handle success
+    useEffect(() => {
+        if (isSuccess) {
+            if (toastId) {
+                updateToast(toastId, 'success', 'Task Created!', 'Your task has been added to the blockchain');
+            }
+            setContent('');
+            setToastId(null);
+            onReset();
+            onClose();
+        }
+    }, [isSuccess, toastId, updateToast, onReset, onClose]);
+
+    // Handle error
+    useEffect(() => {
+        if (error) {
+            if (toastId) {
+                updateToast(toastId, 'error', 'Transaction Failed', error.message.slice(0, 50));
+            } else {
+                showToast('error', 'Transaction Failed', error.message.slice(0, 50));
+            }
+            setToastId(null);
+            onReset();
+        }
+    }, [error, toastId, updateToast, showToast, onReset]);
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        // TODO: Integrate with smart contract
-        console.log({ title, description, stakeAmount, deadline });
-        onClose();
+        if (!content.trim()) return;
+
+        const id = showToast('loading', 'Creating Task...', 'Please confirm in your wallet');
+        setToastId(id);
+        onSubmit(content);
+    };
+
+    const handleClose = () => {
+        if (!isCreating) {
+            setContent('');
+            onClose();
+        }
     };
 
     return (
@@ -31,7 +79,7 @@ export function CreateTaskModal({ isOpen, onClose }: CreateTaskModalProps) {
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        onClick={onClose}
+                        onClick={handleClose}
                         className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50"
                     />
 
@@ -53,8 +101,9 @@ export function CreateTaskModal({ isOpen, onClose }: CreateTaskModalProps) {
                                     <h2 className="text-xl font-semibold text-white">Create Task</h2>
                                 </div>
                                 <button
-                                    onClick={onClose}
-                                    className="p-2 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-lg transition-colors"
+                                    onClick={handleClose}
+                                    disabled={isCreating}
+                                    className="p-2 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-lg transition-colors disabled:opacity-50"
                                 >
                                     <X className="w-5 h-5" />
                                 </button>
@@ -62,75 +111,49 @@ export function CreateTaskModal({ isOpen, onClose }: CreateTaskModalProps) {
 
                             {/* Form */}
                             <form onSubmit={handleSubmit} className="p-6 space-y-5">
-                                {/* Title */}
+                                {/* Task Content */}
                                 <div className="space-y-2">
                                     <label className="flex items-center gap-2 text-sm font-medium text-zinc-300">
                                         <FileText className="w-4 h-4" />
-                                        Task Title
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={title}
-                                        onChange={(e) => setTitle(e.target.value)}
-                                        placeholder="Enter task title..."
-                                        className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500 transition-all"
-                                    />
-                                </div>
-
-                                {/* Description */}
-                                <div className="space-y-2">
-                                    <label className="flex items-center gap-2 text-sm font-medium text-zinc-300">
-                                        <FileText className="w-4 h-4" />
-                                        Description
+                                        Task Description
                                     </label>
                                     <textarea
-                                        value={description}
-                                        onChange={(e) => setDescription(e.target.value)}
-                                        placeholder="Describe the task..."
-                                        rows={3}
-                                        className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500 transition-all resize-none"
+                                        value={content}
+                                        onChange={(e) => setContent(e.target.value)}
+                                        placeholder="Describe your task..."
+                                        rows={4}
+                                        disabled={isCreating}
+                                        className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500 transition-all resize-none disabled:opacity-50"
                                     />
                                 </div>
 
-                                {/* Stake Amount */}
-                                <div className="space-y-2">
-                                    <label className="flex items-center gap-2 text-sm font-medium text-zinc-300">
-                                        <Coins className="w-4 h-4" />
-                                        Stake Amount (MNT)
-                                    </label>
-                                    <input
-                                        type="number"
-                                        value={stakeAmount}
-                                        onChange={(e) => setStakeAmount(e.target.value)}
-                                        placeholder="0.1"
-                                        step="0.01"
-                                        min="0"
-                                        className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500 transition-all"
-                                    />
-                                </div>
-
-                                {/* Deadline */}
-                                <div className="space-y-2">
-                                    <label className="flex items-center gap-2 text-sm font-medium text-zinc-300">
-                                        <Calendar className="w-4 h-4" />
-                                        Deadline
-                                    </label>
-                                    <input
-                                        type="datetime-local"
-                                        value={deadline}
-                                        onChange={(e) => setDeadline(e.target.value)}
-                                        className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500 transition-all"
-                                    />
+                                {/* Info Note */}
+                                <div className="p-3 bg-zinc-800/50 rounded-lg border border-zinc-700/50">
+                                    <p className="text-xs text-zinc-400">
+                                        This will create a transaction on the Mantle Sepolia network.
+                                        You&apos;ll need to confirm the transaction in your wallet.
+                                    </p>
                                 </div>
 
                                 {/* Submit Button */}
                                 <motion.button
                                     type="submit"
-                                    whileHover={{ scale: 1.02 }}
-                                    whileTap={{ scale: 0.98 }}
-                                    className="w-full py-3.5 bg-gradient-to-r from-green-500 to-emerald-600 text-white font-semibold rounded-xl hover:from-green-600 hover:to-emerald-700 transition-all shadow-lg shadow-green-500/25"
+                                    whileHover={{ scale: isCreating ? 1 : 1.02 }}
+                                    whileTap={{ scale: isCreating ? 1 : 0.98 }}
+                                    disabled={isCreating || !content.trim()}
+                                    className="w-full py-3.5 bg-gradient-to-r from-green-500 to-emerald-600 text-white font-semibold rounded-xl hover:from-green-600 hover:to-emerald-700 transition-all shadow-lg shadow-green-500/25 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                                 >
-                                    Create & Stake
+                                    {isCreating ? (
+                                        <>
+                                            <Loader2 className="w-5 h-5 animate-spin" />
+                                            Creating...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Plus className="w-5 h-5" />
+                                            Create Task
+                                        </>
+                                    )}
                                 </motion.button>
                             </form>
                         </div>

@@ -1,22 +1,22 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { Clock, User, Coins, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Clock, User, Coins, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
 import { clsx } from 'clsx';
+import { useAccount } from 'wagmi';
 
 export interface Task {
-    id: string;
-    title: string;
-    description: string;
-    assignee: string;
-    stakedAmount: string;
-    deadline: string;
-    status: 'pending' | 'in-progress' | 'completed' | 'failed';
+    id: bigint;
+    content: string;
+    owner: `0x${string}`;
+    isCompleted: boolean;
 }
 
 interface TaskCardProps {
     task: Task;
     index: number;
+    onComplete?: (taskId: bigint) => void;
+    isCompleting?: boolean;
 }
 
 const statusConfig = {
@@ -27,13 +27,6 @@ const statusConfig = {
         icon: Clock,
         label: 'Pending',
     },
-    'in-progress': {
-        color: 'text-blue-400',
-        bg: 'bg-blue-400/10',
-        border: 'border-blue-400/30',
-        icon: AlertCircle,
-        label: 'In Progress',
-    },
     completed: {
         color: 'text-green-400',
         bg: 'bg-green-400/10',
@@ -41,18 +34,24 @@ const statusConfig = {
         icon: CheckCircle2,
         label: 'Completed',
     },
-    failed: {
-        color: 'text-red-400',
-        bg: 'bg-red-400/10',
-        border: 'border-red-400/30',
-        icon: AlertCircle,
-        label: 'Failed',
-    },
 };
 
-export function TaskCard({ task, index }: TaskCardProps) {
-    const status = statusConfig[task.status];
+export function TaskCard({ task, index, onComplete, isCompleting }: TaskCardProps) {
+    const { address } = useAccount();
+    const status = task.isCompleted ? statusConfig.completed : statusConfig.pending;
     const StatusIcon = status.icon;
+    const isOwner = address && address.toLowerCase() === task.owner.toLowerCase();
+
+    const handleComplete = () => {
+        if (onComplete && !task.isCompleted && isOwner) {
+            onComplete(task.id);
+        }
+    };
+
+    // Truncate address for display
+    const truncateAddress = (addr: string) => {
+        return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
+    };
 
     return (
         <motion.div
@@ -80,33 +79,57 @@ export function TaskCard({ task, index }: TaskCardProps) {
                 {status.label}
             </div>
 
-            {/* Task Title */}
-            <h3 className="text-lg font-semibold text-white pr-28 mb-2">
-                {task.title}
+            {/* Task ID */}
+            <span className="text-xs text-zinc-500 mb-1 block">Task #{task.id.toString()}</span>
+
+            {/* Task Content */}
+            <h3 className="text-lg font-semibold text-white pr-28 mb-2 line-clamp-2">
+                {task.content}
             </h3>
 
-            {/* Task Description */}
-            <p className="text-zinc-400 text-sm mb-4 line-clamp-2">
-                {task.description}
-            </p>
-
             {/* Task Meta */}
-            <div className="flex flex-wrap items-center gap-4 text-sm">
+            <div className="flex flex-wrap items-center gap-4 text-sm mt-4">
                 <div className="flex items-center gap-2 text-zinc-400">
                     <User className="w-4 h-4" />
-                    <span className="truncate max-w-[120px]">{task.assignee}</span>
-                </div>
-
-                <div className="flex items-center gap-2 text-emerald-400">
-                    <Coins className="w-4 h-4" />
-                    <span className="font-medium">{task.stakedAmount} MNT</span>
-                </div>
-
-                <div className="flex items-center gap-2 text-zinc-400">
-                    <Clock className="w-4 h-4" />
-                    <span>{task.deadline}</span>
+                    <span className="truncate max-w-[120px]" title={task.owner}>
+                        {truncateAddress(task.owner)}
+                    </span>
+                    {isOwner && (
+                        <span className="px-1.5 py-0.5 text-xs bg-green-500/20 text-green-400 rounded">
+                            You
+                        </span>
+                    )}
                 </div>
             </div>
+
+            {/* Complete Button */}
+            {!task.isCompleted && isOwner && (
+                <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={handleComplete}
+                    disabled={isCompleting}
+                    className={clsx(
+                        'mt-4 w-full py-2.5 rounded-xl font-medium text-sm transition-all',
+                        'bg-gradient-to-r from-green-500 to-emerald-600',
+                        'hover:from-green-600 hover:to-emerald-700',
+                        'disabled:opacity-50 disabled:cursor-not-allowed',
+                        'flex items-center justify-center gap-2'
+                    )}
+                >
+                    {isCompleting ? (
+                        <>
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            Completing...
+                        </>
+                    ) : (
+                        <>
+                            <CheckCircle2 className="w-4 h-4" />
+                            Mark Complete
+                        </>
+                    )}
+                </motion.button>
+            )}
 
             {/* Hover Glow Effect */}
             <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-green-500/0 via-green-500/5 to-emerald-500/0 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
