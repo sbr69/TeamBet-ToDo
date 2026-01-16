@@ -13,10 +13,13 @@ node_modules/
 *.key
 secrets.json
 
-# Foundry
+# Foundry - Build artifacts and deployment logs
 contracts/cache/
 contracts/out/
 contracts/broadcast/
+cache/
+out/
+broadcast/
 
 # Next.js
 .next/

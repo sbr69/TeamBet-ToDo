@@ -1,4 +1,10 @@
-import { getDefaultConfig } from '@rainbow-me/rainbowkit';
+import { connectorsForWallets } from '@rainbow-me/rainbowkit';
+import {
+  injectedWallet,
+  rainbowWallet,
+  walletConnectWallet,
+} from '@rainbow-me/rainbowkit/wallets';
+import { createConfig, http } from 'wagmi';
 import { defineChain } from 'viem';
 
 // Define Mantle Sepolia Testnet
@@ -24,10 +30,31 @@ export const mantleSepolia = defineChain({
   testnet: true,
 });
 
-// Wagmi + RainbowKit configuration
-export const config = getDefaultConfig({
-  appName: 'ToDo dApp',
-  projectId: process.env.NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID || 'YOUR_PROJECT_ID',
+const projectId = process.env.NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID || 'YOUR_PROJECT_ID';
+
+const connectors = connectorsForWallets(
+  [
+    {
+      groupName: 'Recommended',
+      wallets: [
+        injectedWallet,
+        rainbowWallet,
+        walletConnectWallet,
+      ],
+    },
+  ],
+  {
+    appName: 'ToDo dApp',
+    projectId,
+  }
+);
+
+// Minimal Wagmi configuration
+export const config = createConfig({
+  connectors,
   chains: [mantleSepolia],
+  transports: {
+    [mantleSepolia.id]: http(),
+  },
   ssr: true,
 });

@@ -81,6 +81,24 @@ export function useToDo() {
         reset: resetClaim,
     } = useWriteContract();
 
+    // Write: Forfeit Stake
+    const {
+        writeContract: writeForfeitStake,
+        data: forfeitTxHash,
+        isPending: isForfeiting,
+        error: forfeitError,
+        reset: resetForfeit,
+    } = useWriteContract();
+
+    // Write: Withdraw Party Fund
+    const {
+        writeContract: writeWithdrawPartyFund,
+        data: withdrawTxHash,
+        isPending: isWithdrawing,
+        error: withdrawError,
+        reset: resetWithdraw,
+    } = useWriteContract();
+
     // Transaction receipts
     const { isLoading: isCreateConfirming, isSuccess: isCreateSuccess } =
         useWaitForTransactionReceipt({ hash: createTxHash });
@@ -94,13 +112,19 @@ export function useToDo() {
     const { isLoading: isClaimConfirming, isSuccess: isClaimSuccess } =
         useWaitForTransactionReceipt({ hash: claimTxHash });
 
+    const { isLoading: isForfeitConfirming, isSuccess: isForfeitSuccess } =
+        useWaitForTransactionReceipt({ hash: forfeitTxHash });
+
+    const { isLoading: isWithdrawConfirming, isSuccess: isWithdrawSuccess } =
+        useWaitForTransactionReceipt({ hash: withdrawTxHash });
+
     // Refetch on successful transactions
     useEffect(() => {
-        if (isCreateSuccess || isCompleteSuccess || isVerifySuccess || isClaimSuccess) {
+        if (isCreateSuccess || isCompleteSuccess || isVerifySuccess || isClaimSuccess || isForfeitSuccess || isWithdrawSuccess) {
             refetchTaskCount();
             refetchPartyFund();
         }
-    }, [isCreateSuccess, isCompleteSuccess, isVerifySuccess, isClaimSuccess, refetchTaskCount, refetchPartyFund]);
+    }, [isCreateSuccess, isCompleteSuccess, isVerifySuccess, isClaimSuccess, isForfeitSuccess, isWithdrawSuccess, refetchTaskCount, refetchPartyFund]);
 
     // Create task function (payable)
     const createTask = (content: string, deadline: bigint, stakeAmount: string) => {
@@ -143,6 +167,25 @@ export function useToDo() {
         });
     };
 
+    // Forfeit stake function
+    const forfeitStake = (taskId: bigint) => {
+        writeForfeitStake({
+            address: TODO_CONTRACT_ADDRESS,
+            abi: TODO_ABI,
+            functionName: 'forfeitStake',
+            args: [taskId],
+        });
+    };
+
+    // Withdraw party fund function
+    const withdrawPartyFund = () => {
+        writeWithdrawPartyFund({
+            address: TODO_CONTRACT_ADDRESS,
+            abi: TODO_ABI,
+            functionName: 'withdrawPartyFund',
+        });
+    };
+
     return {
         // Data
         taskCount: nextTaskId ? Number(nextTaskId) : 0,
@@ -177,6 +220,20 @@ export function useToDo() {
         isClaimSuccess,
         claimError,
         resetClaim,
+
+        // Forfeit Stake
+        forfeitStake,
+        isForfeiting: isForfeiting || isForfeitConfirming,
+        isForfeitSuccess,
+        forfeitError,
+        resetForfeit,
+
+        // Withdraw Party Fund
+        withdrawPartyFund,
+        isWithdrawing: isWithdrawing || isWithdrawConfirming,
+        isWithdrawSuccess,
+        withdrawError,
+        resetWithdraw,
 
         // Refetch
         refetch: () => {

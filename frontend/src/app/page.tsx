@@ -20,9 +20,11 @@ function TaskCardWithData({
   onComplete,
   onVerify,
   onClaim,
+  onForfeit,
   isCompleting,
   isVerifying,
-  isClaiming
+  isClaiming,
+  isForfeiting
 }: {
   taskId: bigint;
   index: number;
@@ -30,9 +32,11 @@ function TaskCardWithData({
   onComplete: (id: bigint) => void;
   onVerify: (id: bigint) => void;
   onClaim: (id: bigint) => void;
+  onForfeit: (taskId: bigint) => void;
   isCompleting: boolean;
   isVerifying: boolean;
   isClaiming: boolean;
+  isForfeiting: boolean;
 }) {
   const { task, isLoading, refetch } = useTask(taskId);
 
@@ -59,9 +63,11 @@ function TaskCardWithData({
       onComplete={onComplete}
       onVerify={onVerify}
       onClaim={onClaim}
+      onForfeit={onForfeit}
       isCompleting={isCompleting}
       isVerifying={isVerifying}
       isClaiming={isClaiming}
+      isForfeiting={isForfeiting}
     />
   );
 }
@@ -97,6 +103,16 @@ export default function Home() {
     isClaimSuccess,
     claimError,
     resetClaim,
+    forfeitStake,
+    isForfeiting,
+    isForfeitSuccess,
+    forfeitError,
+    resetForfeit,
+    withdrawPartyFund,
+    isWithdrawing,
+    isWithdrawSuccess,
+    withdrawError,
+    resetWithdraw,
   } = useToDo();
 
   const isTeamLead = address && teamLead && address.toLowerCase() === teamLead.toLowerCase();
@@ -118,18 +134,30 @@ export default function Home() {
       setActionToastId(null);
       resetClaim();
     }
-  }, [isCompleteSuccess, isVerifySuccess, isClaimSuccess, actionToastId, updateToast, resetComplete, resetVerify, resetClaim]);
+    if (isForfeitSuccess) {
+      if (actionToastId) updateToast(actionToastId, 'success', 'Stake Forfeited!', 'Funds moved to Party Fund');
+      setActionToastId(null);
+      resetForfeit();
+    }
+    if (isWithdrawSuccess) {
+      if (actionToastId) updateToast(actionToastId, 'success', 'Party Fund Withdrawn!', 'Funds sent to your wallet');
+      setActionToastId(null);
+      resetWithdraw();
+    }
+  }, [isCompleteSuccess, isVerifySuccess, isClaimSuccess, isForfeitSuccess, isWithdrawSuccess, actionToastId, updateToast, resetComplete, resetVerify, resetClaim, resetForfeit, resetWithdraw]);
 
   useEffect(() => {
-    const error = completeError || verifyError || claimError;
+    const error = completeError || verifyError || claimError || forfeitError || withdrawError;
     if (error) {
       if (actionToastId) updateToast(actionToastId, 'error', 'Transaction Failed', error.message.slice(0, 50));
       setActionToastId(null);
       if (completeError) resetComplete();
       if (verifyError) resetVerify();
       if (claimError) resetClaim();
+      if (forfeitError) resetForfeit();
+      if (withdrawError) resetWithdraw();
     }
-  }, [completeError, verifyError, claimError, actionToastId, updateToast, resetComplete, resetVerify, resetClaim]);
+  }, [completeError, verifyError, claimError, forfeitError, withdrawError, actionToastId, updateToast, resetComplete, resetVerify, resetClaim, resetForfeit, resetWithdraw]);
 
   const handleComplete = (taskId: bigint) => {
     const id = showToast('loading', 'Completing Task...', 'Please confirm in your wallet');
@@ -147,6 +175,18 @@ export default function Home() {
     const id = showToast('loading', 'Claiming Stake...', 'Please confirm in your wallet');
     setActionToastId(id);
     claimStake(taskId);
+  };
+
+  const handleForfeit = (taskId: bigint) => {
+    const id = showToast('loading', 'Forfeiting Stake...', 'Please confirm in your wallet');
+    setActionToastId(id);
+    forfeitStake(taskId);
+  };
+
+  const handleWithdraw = () => {
+    const id = showToast('loading', 'Withdrawing Fund...', 'Please confirm in your wallet');
+    setActionToastId(id);
+    withdrawPartyFund();
   };
 
   return (
@@ -255,6 +295,22 @@ export default function Home() {
                 <Plus className="w-5 h-5" />
                 Create Task
               </motion.button>
+
+              {isTeamLead && partyFund > BigInt(0) && (
+                <motion.button
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.5, delay: 0.4 }}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={handleWithdraw}
+                  disabled={isWithdrawing}
+                  className="ml-3 flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-purple-500 to-pink-600 text-white font-medium rounded-xl hover:from-purple-600 hover:to-pink-700 transition-all shadow-lg shadow-purple-500/25 disabled:opacity-50"
+                >
+                  <PartyPopper className="w-5 h-5" />
+                  {isWithdrawing ? 'Withdrawing...' : 'Withdraw Fund'}
+                </motion.button>
+              )}
             </div>
 
             {/* Empty State */}
@@ -284,9 +340,11 @@ export default function Home() {
                     onComplete={handleComplete}
                     onVerify={handleVerify}
                     onClaim={handleClaim}
+                    onForfeit={handleForfeit}
                     isCompleting={isCompleting}
                     isVerifying={isVerifying}
                     isClaiming={isClaiming}
+                    isForfeiting={isForfeiting}
                   />
                 ))}
               </div>

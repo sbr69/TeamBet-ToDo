@@ -23,9 +23,11 @@ interface TaskCardProps {
     onComplete?: (taskId: bigint) => void;
     onVerify?: (taskId: bigint) => void;
     onClaim?: (taskId: bigint) => void;
+    onForfeit?: (taskId: bigint) => void;
     isCompleting?: boolean;
     isVerifying?: boolean;
     isClaiming?: boolean;
+    isForfeiting?: boolean;
 }
 
 function getTaskStatus(task: Task, isDeadlinePassed: boolean) {
@@ -99,9 +101,11 @@ export function TaskCard({
     onComplete,
     onVerify,
     onClaim,
+    onForfeit,
     isCompleting,
     isVerifying,
-    isClaiming
+    isClaiming,
+    isForfeiting
 }: TaskCardProps) {
     const { address } = useAccount();
     const isOwner = address && address.toLowerCase() === task.owner.toLowerCase();
@@ -114,6 +118,7 @@ export function TaskCard({
     const canComplete = isOwner && !task.isCompleted && !isDeadlinePassed;
     const canVerify = isTeamLead && task.isCompleted && !task.isVerified;
     const canClaim = isOwner && task.isVerified && task.stakedAmount > BigInt(0) && !isDeadlinePassed;
+    const canForfeit = isDeadlinePassed && !task.isVerified && task.stakedAmount > BigInt(0);
 
     return (
         <motion.div
@@ -206,6 +211,20 @@ export function TaskCard({
                     >
                         {isClaiming ? <Loader2 className="w-4 h-4 animate-spin" /> : <Coins className="w-4 h-4" />}
                         {isClaiming ? 'Claiming...' : 'Claim Stake'}
+                    </motion.button>
+                )}
+
+                {/* Forfeit Stake Button - Anyone, after deadline */}
+                {canForfeit && (
+                    <motion.button
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() => onForfeit?.(task.id)}
+                        disabled={isForfeiting}
+                        className="flex-1 py-2.5 rounded-xl font-medium text-sm bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700 disabled:opacity-50 flex items-center justify-center gap-2"
+                    >
+                        {isForfeiting ? <Loader2 className="w-4 h-4 animate-spin" /> : <AlertCircle className="w-4 h-4" />}
+                        {isForfeiting ? 'Forfeiting...' : 'Forfeit Stake'}
                     </motion.button>
                 )}
             </div>

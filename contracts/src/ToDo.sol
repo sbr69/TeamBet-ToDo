@@ -7,8 +7,6 @@ pragma solidity ^0.8.24;
  * @notice Micro-incentive task management - stake MNT, complete before deadline, or fund the party!
  */
 contract ToDo {
-    // ============ Structs ============
-
     struct Task {
         uint256 id;
         string content;
@@ -157,7 +155,7 @@ contract ToDo {
      * @param _taskId Task ID to forfeit
      */
     function forfeitStake(uint256 _taskId) external {
-        Task storage task = tasks[_taskId];
+        Task storage task = tasks[_taskId]; 
         if (task.owner == address(0)) revert TaskDoesNotExist();
         if (block.timestamp <= task.deadline) revert DeadlineNotPassed();
         if (task.stakedAmount == 0) revert StakeAlreadyClaimed();
