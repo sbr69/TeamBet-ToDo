@@ -85,7 +85,7 @@ Perfect for remote teams, study groups, or anyone who needs that extra push to s
 
 ### Step 1: Connect Your Wallet
 
-1. Visit the application at `https://team-bet-to-do.vercel.app`
+1. Visit the application at [https://team-bet-to-do.vercel.app](https://team-bet-to-do.vercel.app)
 2. Click **"Connect Wallet"** in the navigation bar
 3. Select your wallet (MetaMask, WalletConnect, etc.)
 4. Ensure you're connected to **Mantle Sepolia Testnet**
