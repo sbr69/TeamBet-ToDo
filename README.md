@@ -57,9 +57,9 @@ Perfect for remote teams, study groups, or anyone who needs that extra push to s
 │                                   │ required     │              │
 │                                   └──────────────┘              │
 │                                            │                    │
-│                    ┌───────────────────────┴───────────────┐    │
-│                    ▼                                       ▼    │
-│           ✅ BEFORE DEADLINE                    ❌ AFTER DEADLINE│
+│                    ┌───────────────────────┴───────────┐        │
+│                    ▼                                   ▼        │
+│          ✅ BEFORE DEADLINE                 ❌ AFTER DEADLINE  │
 │           ┌──────────────┐                    ┌──────────────┐  │
 │           │ Claim stake  │                    │ Stake goes   │  │
 │           │ back!        │                    │ to Party Fund│  │
@@ -85,7 +85,7 @@ Perfect for remote teams, study groups, or anyone who needs that extra push to s
 
 ### Step 1: Connect Your Wallet
 
-1. Visit the application at `http://localhost:3000`
+1. Visit the application at `https://team-bet-to-do.vercel.app`
 2. Click **"Connect Wallet"** in the navigation bar
 3. Select your wallet (MetaMask, WalletConnect, etc.)
 4. Ensure you're connected to **Mantle Sepolia Testnet**
@@ -104,7 +104,7 @@ Perfect for remote teams, study groups, or anyone who needs that extra push to s
 
 ### Step 3: Complete Your Task
 
-1. Finish your task in real life 💪
+1. Finish your task in real life 
 2. Find your task in the list and click **"Mark Complete"**
 3. Confirm the transaction
 4. Your task now shows as "Awaiting Verification"
@@ -149,7 +149,7 @@ Perfect for remote teams, study groups, or anyone who needs that extra push to s
 
 ```
 web3/
-├── contracts/                 # Smart contract code
+├── contracts/                # Smart contract code
 │   ├── src/
 │   │   └── ToDo.sol          # Main contract
 │   ├── test/
@@ -158,7 +158,7 @@ web3/
 │   │   └── DeployToDo.s.sol  # Deployment script
 │   └── foundry.toml          # Foundry config
 │
-├── frontend/                  # Next.js application
+├── frontend/                 # Next.js application
 │   ├── src/
 │   │   ├── app/              # Pages
 │   │   ├── components/       # UI components
@@ -168,7 +168,7 @@ web3/
 │   │   └── providers/        # Context providers
 │   └── package.json
 │
-└── README.md                  # This file
+└── README.md                 # This file
 ```
 
 ---
@@ -185,7 +185,6 @@ web3/
 
 ```bash
 git clone <your-repo-url>
-cd web3
 ```
 
 ### 2. Setup Smart Contracts
@@ -314,5 +313,5 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ---
 
 <p align="center">
-  Built with ❤️ for productive teams everywhere
+  Built by SBR
 </p>
