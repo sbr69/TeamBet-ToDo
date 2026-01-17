@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, ListTodo, Coins, Clock, PartyPopper, Wallet, Shield, Filter } from 'lucide-react';
+import { Plus, ListTodo, Coins, Clock, PartyPopper, Wallet, Shield, Filter, RefreshCw } from 'lucide-react';
 import { useAccount } from 'wagmi';
 import { formatEther } from 'viem';
 import { Navbar } from '@/components/Navbar';
@@ -114,6 +114,8 @@ export default function Home() {
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [filter, setFilter] = useState<'all' | TaskStatus>('all');
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
   const [allTasks, setAllTasks] = useState<Task[]>([]);
   const { address, isConnected } = useAccount();
   const { showToast, updateToast } = useToast();
@@ -154,6 +156,7 @@ export default function Home() {
     isWithdrawSuccess,
     withdrawError,
     resetWithdraw,
+    refetch,
   } = useToDo();
 
   const activeTasksCount = useMemo(() =>
@@ -237,6 +240,17 @@ export default function Home() {
   const handleTaskClick = (task: Task) => {
     setSelectedTask(task);
     setIsDetailModalOpen(true);
+  };
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    // Clear existing tasks and refetch from blockchain
+    setAllTasks([]);
+    refetch();
+    // Increment refreshKey to force re-mount of task loaders
+    setRefreshKey(k => k + 1);
+    // Reset refreshing state after a short delay
+    setTimeout(() => setIsRefreshing(false), 1000);
   };
 
   const handleTaskLoaded = useCallback((task: Task) => {
@@ -407,6 +421,26 @@ export default function Home() {
                     </AnimatePresence>
                   </motion.div>
                 )}
+
+                {/* Refresh Button */}
+                {taskCount > 0 && (
+                  <motion.button
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.5, delay: 0.45 }}
+                    onClick={handleRefresh}
+                    disabled={isRefreshing}
+                    className="flex items-center gap-2 px-4 py-2 bg-zinc-900/80 border border-zinc-800 rounded-xl hover:border-zinc-700 transition-all text-sm font-medium text-white disabled:opacity-50"
+                    title="Refresh tasks"
+                  >
+                    <motion.div
+                      animate={{ rotate: isRefreshing ? 360 : 0 }}
+                      transition={{ duration: 1, repeat: isRefreshing ? Infinity : 0, ease: "linear" }}
+                    >
+                      <RefreshCw className="w-4 h-4 text-zinc-400" />
+                    </motion.div>
+                  </motion.button>
+                )}
               </div>
 
               <div className="flex items-center gap-3">
@@ -485,7 +519,7 @@ export default function Home() {
           <div className="hidden">
             {Array.from({ length: taskCount }, (_, i) => (
               <TaskCardWithData
-                key={`loader-${i}`}
+                key={`loader-${refreshKey}-${i}`}
                 taskId={BigInt(i)}
                 index={i}
                 isTeamLead={!!isTeamLead}

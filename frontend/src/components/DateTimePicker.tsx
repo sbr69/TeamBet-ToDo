@@ -152,11 +152,12 @@ export function DatePicker({ value, onChange, minDate, hasError }: DatePickerPro
                     >
                         {/* Header */}
                         <div className="flex items-center justify-between mb-4">
-                            <button onClick={handlePrev} className="p-1 hover:bg-zinc-800 rounded-lg text-zinc-400 hover:text-white transition-colors">
+                            <button type="button" onClick={handlePrev} className="p-1 hover:bg-zinc-800 rounded-lg text-zinc-400 hover:text-white transition-colors">
                                 <ChevronLeft className="w-5 h-5" />
                             </button>
                             <div className="flex gap-1 font-semibold text-white">
                                 <button
+                                    type="button"
                                     onClick={() => setView(view === 'months' ? 'days' : 'months')}
                                     className="px-2 py-1 hover:bg-zinc-800 rounded-lg transition-colors"
                                 >
@@ -164,6 +165,7 @@ export function DatePicker({ value, onChange, minDate, hasError }: DatePickerPro
                                 </button>
                                 {view !== 'years' && (
                                     <button
+                                        type="button"
                                         onClick={() => setView('years')}
                                         className="px-2 py-1 hover:bg-zinc-800 rounded-lg transition-colors"
                                     >
@@ -171,7 +173,7 @@ export function DatePicker({ value, onChange, minDate, hasError }: DatePickerPro
                                     </button>
                                 )}
                             </div>
-                            <button onClick={handleNext} className="p-1 hover:bg-zinc-800 rounded-lg text-zinc-400 hover:text-white transition-colors">
+                            <button type="button" onClick={handleNext} className="p-1 hover:bg-zinc-800 rounded-lg text-zinc-400 hover:text-white transition-colors">
                                 <ChevronRight className="w-5 h-5" />
                             </button>
                         </div>
@@ -202,6 +204,7 @@ export function DatePicker({ value, onChange, minDate, hasError }: DatePickerPro
 
                                             return (
                                                 <button
+                                                    type="button"
                                                     key={day}
                                                     onClick={() => !disabled && handleDateClick(day)}
                                                     disabled={disabled}
@@ -236,6 +239,7 @@ export function DatePicker({ value, onChange, minDate, hasError }: DatePickerPro
 
                                         return (
                                             <button
+                                                type="button"
                                                 key={month}
                                                 onClick={() => handleMonthClick(index)}
                                                 className={clsx(
@@ -266,6 +270,7 @@ export function DatePicker({ value, onChange, minDate, hasError }: DatePickerPro
 
                                         return (
                                             <button
+                                                type="button"
                                                 key={year}
                                                 onClick={() => handleYearClick(year)}
                                                 className={clsx(
@@ -346,6 +351,7 @@ export function TimePicker({ value, onChange, hasError }: TimePickerProps) {
                             <div className="h-48 overflow-y-auto no-scrollbar space-y-1">
                                 {HOURS.map(h => (
                                     <button
+                                        type="button"
                                         key={h}
                                         onClick={() => handleTimeSelect(h, minutes)}
                                         className={clsx(
@@ -366,6 +372,7 @@ export function TimePicker({ value, onChange, hasError }: TimePickerProps) {
                             <div className="h-48 overflow-y-auto no-scrollbar space-y-1">
                                 {MINUTES.map(m => (
                                     <button
+                                        type="button"
                                         key={m}
                                         onClick={() => handleTimeSelect(hours, m)}
                                         className={clsx(

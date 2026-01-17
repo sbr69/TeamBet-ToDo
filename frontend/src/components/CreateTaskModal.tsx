@@ -120,13 +120,23 @@ export function CreateTaskModal({
     };
 
     const handleClose = () => {
-        if (!isCreating) {
-            setContent('');
-            setStakeAmount('');
-            setErrors({});
-            setHasSubmitted(false);
-            onClose();
+        // If transaction is in progress, cancel it and notify user
+        if (isCreating) {
+            // Update the loading toast to show cancellation
+            if (toastId) {
+                updateToast(toastId, 'error', 'Transaction Cancelled', 'Reject in wallet if popup is open');
+            }
+            onReset();
         }
+
+        // Reset all modal state
+        setContent('');
+        setStakeAmount('');
+        setErrors({});
+        setHasSubmitted(false);
+        setToastId(null);
+
+        onClose();
     };
 
 
@@ -165,8 +175,7 @@ export function CreateTaskModal({
                                 </div>
                                 <button
                                     onClick={handleClose}
-                                    disabled={isCreating}
-                                    className="p-2 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-lg transition-colors disabled:opacity-50"
+                                    className="p-2 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-lg transition-colors"
                                 >
                                     <X className="w-5 h-5" />
                                 </button>
