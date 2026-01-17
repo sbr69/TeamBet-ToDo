@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, ListTodo, Coins, Clock, PartyPopper, Wallet, Shield, Filter } from 'lucide-react';
 import { useAccount } from 'wagmi';
@@ -133,6 +133,10 @@ export default function Home() {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [allTasks, setAllTasks] = useState<Task[]>([]);
   const { address, isConnected } = useAccount();
+
+  const activeTasksCount = useMemo(() => {
+    return allTasks.filter(t => getTaskStatus(t) === 'in-progress').length;
+  }, [allTasks]);
   const { showToast, updateToast } = useToast();
   const [actionToastId, setActionToastId] = useState<string | null>(null);
 
@@ -304,9 +308,9 @@ export default function Home() {
         {/* Stats Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
           <StatsCard
-            title="Total Tasks"
-            value={taskCount}
-            subtitle="On blockchain"
+            title="Tasks"
+            value={activeTasksCount}
+            subtitle="Active now"
             icon={ListTodo}
             color="blue"
             index={0}
