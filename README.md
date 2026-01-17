@@ -43,22 +43,22 @@ Perfect for remote teams, study groups, or anyone who needs that extra push to s
 │                        TASK LIFECYCLE                           │
 ├─────────────────────────────────────────────────────────────────┤
 │                                                                 │
-│   1. CREATE TASK                    2. COMPLETE TASK            │
-│   ┌──────────────┐                  ┌──────────────┐            │
-│   │ User stakes  │                  │ User marks   │            │
-│   │ MNT tokens   │ ───────────────► │ as complete  │            │
-│   │ + deadline   │                  │              │            │
-│   └──────────────┘                  └──────────────┘            │
-│                                            │                    │
-│                                            ▼                    │
-│                                   3. TEAM LEAD VERIFIES         │
+│   1. CREATE TASK                2. COMPLETE TASK                │
+│   ┌──────────────┐              ┌──────────────┐                │
+│   │ User stakes  │              │ User marks   │                │
+│   │ MNT tokens   │ ───────────► │ as complete  │                │    
+│   │ + deadline   │              │              │                │
+│   └──────────────┘              └──────────────┘                │    
+│                                         │                       │
+│                                         ▼                       │
+│                                 3. TEAM LEAD VERIFIES           │
 │                                   ┌──────────────┐              │
 │                                   │ Approval     │              │
 │                                   │ required     │              │
 │                                   └──────────────┘              │
-│                                            │                    │
-│                    ┌───────────────────────┴───────────┐        │
-│                    ▼                                   ▼        │
+│                                          │                      │
+│                    ┌─────────────────────┴───────────┐          │
+│                    ▼                                 ▼          │
 │          ✅ BEFORE DEADLINE                 ❌ AFTER DEADLINE  │
 │           ┌──────────────┐                    ┌──────────────┐  │
 │           │ Claim stake  │                    │ Stake goes   │  │
@@ -89,8 +89,6 @@ Perfect for remote teams, study groups, or anyone who needs that extra push to s
 2. Click **"Connect Wallet"** in the navigation bar
 3. Select your wallet (MetaMask, WalletConnect, etc.)
 4. Ensure you're connected to **Mantle Sepolia Testnet**
-
-> 💡 **Need testnet MNT?** Get some from the [Mantle Sepolia Faucet](https://faucet.sepolia.mantle.xyz/)
 
 ### Step 2: Create a Task
 
@@ -184,7 +182,7 @@ web3/
 ### 1. Clone the Repository
 
 ```bash
-git clone <your-repo-url>
+git clone https://github.com/sbr69/TeamBet-ToDo.git
 ```
 
 ### 2. Setup Smart Contracts
@@ -245,7 +243,7 @@ Navigate to [http://localhost:3000](http://localhost:3000) in your browser.
 
 ### Constants
 
-- **Minimum Stake**: 0.001 MNT (1e15 wei)
+- **Minimum Stake**: 0.1 MNT (1e17 wei)
 
 ---
 
