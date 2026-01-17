@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { Plus, ListTodo, Coins, Clock, PartyPopper, Wallet, Shield } from 'lucide-react';
+import { Plus, ListTodo, Coins, Clock, PartyPopper, Wallet, Shield, Filter } from 'lucide-react';
 import { useAccount } from 'wagmi';
 import { formatEther } from 'viem';
 import { Navbar } from '@/components/Navbar';
@@ -12,6 +12,46 @@ import { CreateTaskModal } from '@/components/CreateTaskModal';
 import { TaskDetailModal } from '@/components/TaskDetailModal';
 import { useToDo, useTask } from '@/hooks/useToDo';
 import { useToast } from '@/components/Toast';
+
+// Helper function to determine task status
+type TaskStatus = 'in-progress' | 'verified' | 'failed';
+
+function getTaskStatus(task: Task): TaskStatus {
+  const isDeadlinePassed = Date.now() > Number(task.deadline) * 1000;
+
+  if (task.isVerified) return 'verified';
+  if (isDeadlinePassed) return 'failed';
+  return 'in-progress';
+}
+
+// Helper function to sort and filter tasks
+function sortAndFilterTasks(
+  tasks: Task[],
+  filter: 'all' | TaskStatus
+): Task[] {
+  // Filter tasks based on selected filter
+  let filtered = tasks;
+  if (filter !== 'all') {
+    filtered = tasks.filter(task => getTaskStatus(task) === filter);
+  }
+
+  // Sort by deadline proximity (nearest first)
+  const sortedByDeadline = [...filtered].sort((a, b) => {
+    const deadlineA = Number(a.deadline);
+    const deadlineB = Number(b.deadline);
+    return deadlineA - deadlineB;
+  });
+
+  // If "all" filter, group by status priority: in-progress -> verified -> failed
+  if (filter === 'all') {
+    const inProgress = sortedByDeadline.filter(t => getTaskStatus(t) === 'in-progress');
+    const verified = sortedByDeadline.filter(t => getTaskStatus(t) === 'verified');
+    const failed = sortedByDeadline.filter(t => getTaskStatus(t) === 'failed');
+    return [...inProgress, ...verified, ...failed];
+  }
+
+  return sortedByDeadline;
+}
 
 // Component to fetch and display a single task
 function TaskCardWithData({
@@ -26,7 +66,8 @@ function TaskCardWithData({
   isCompleting,
   isVerifying,
   isClaiming,
-  isForfeiting
+  isForfeiting,
+  onTaskLoaded
 }: {
   taskId: bigint;
   index: number;
@@ -40,6 +81,7 @@ function TaskCardWithData({
   isVerifying: boolean;
   isClaiming: boolean;
   isForfeiting: boolean;
+  onTaskLoaded?: (task: Task) => void;
 }) {
   const { task, isLoading, refetch } = useTask(taskId);
 
@@ -48,6 +90,13 @@ function TaskCardWithData({
     const interval = setInterval(() => refetch(), 10000);
     return () => clearInterval(interval);
   }, [refetch]);
+
+  // Notify parent when task is loaded
+  useEffect(() => {
+    if (task && onTaskLoaded) {
+      onTaskLoaded(task);
+    }
+  }, [task?.id, task?.isCompleted, task?.isVerified, task?.deadline, onTaskLoaded]);
 
   if (isLoading || !task) {
     return (
@@ -80,6 +129,8 @@ export default function Home() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [filter, setFilter] = useState<'all' | TaskStatus>('all');
+  const [allTasks, setAllTasks] = useState<Task[]>([]);
   const { address, isConnected } = useAccount();
   const { showToast, updateToast } = useToast();
   const [actionToastId, setActionToastId] = useState<string | null>(null);
@@ -200,6 +251,25 @@ export default function Home() {
     setIsDetailModalOpen(true);
   };
 
+  // Callback to collect loaded tasks (memoized to prevent infinite loops)
+  const handleTaskLoaded = useCallback((task: Task) => {
+    setAllTasks(prev => {
+      // Check if task already exists
+      const exists = prev.some(t => t.id === task.id);
+      if (exists) {
+        // Update existing task
+        return prev.map(t => t.id === task.id ? task : t);
+      }
+      // Add new task
+      return [...prev, task];
+    });
+  }, []);
+
+  // Reset allTasks when taskCount changes
+  useEffect(() => {
+    setAllTasks([]);
+  }, [taskCount]);
+
   return (
     <div className="min-h-screen bg-zinc-950">
       <Navbar />
@@ -285,14 +355,44 @@ export default function Home() {
         {isConnected && (
           <div className="space-y-6">
             <div className="flex items-center justify-between">
-              <motion.h2
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.5, delay: 0.3 }}
-                className="text-2xl font-semibold text-white"
-              >
-                Active Tasks
-              </motion.h2>
+              <div className="flex items-center gap-4">
+                <motion.h2
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.5, delay: 0.3 }}
+                  className="text-2xl font-semibold text-white"
+                >
+                  Active Tasks
+                </motion.h2>
+
+                {/* Filter Dropdown */}
+                {taskCount > 0 && (
+                  <motion.div
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.5, delay: 0.4 }}
+                    className="relative"
+                  >
+                    <div className="flex items-center gap-2 px-4 py-2 bg-zinc-900/80 border border-zinc-800 rounded-xl hover:border-zinc-700 transition-colors" style={{ width: '160px' }}>
+                      <Filter className="w-4 h-4 text-zinc-400" />
+                      <select
+                        value={filter}
+                        onChange={(e) => setFilter(e.target.value as 'all' | TaskStatus)}
+                        className="flex-1 bg-transparent text-white text-sm font-medium outline-none cursor-pointer appearance-none"
+                        style={{ width: '100%' }}
+                      >
+                        <option value="all" className="bg-zinc-900">All Tasks</option>
+                        <option value="in-progress" className="bg-zinc-900">In Progress</option>
+                        <option value="verified" className="bg-zinc-900">Verified</option>
+                        <option value="failed" className="bg-zinc-900">Failed</option>
+                      </select>
+                      <svg className="w-4 h-4 text-zinc-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </div>
+                  </motion.div>
+                )}
+              </div>
 
               <div className="flex items-center gap-3">
                 {isTeamLead && partyFund > BigInt(0) && (
@@ -306,7 +406,7 @@ export default function Home() {
                     disabled={isWithdrawing}
                     className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-purple-500 to-pink-600 text-white font-medium rounded-xl hover:from-purple-600 hover:to-pink-700 transition-all shadow-lg shadow-purple-500/25 disabled:opacity-50"
                   >
-                    <PartyPopper className="w-5 h-5" />
+                    <span className="text-xl">💸</span>
                     {isWithdrawing ? 'Withdrawing...' : 'Withdraw Fund'}
                   </motion.button>
                 )}
@@ -343,25 +443,50 @@ export default function Home() {
 
             {/* Task Cards Grid */}
             {taskCount > 0 && (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                {Array.from({ length: taskCount }, (_, i) => (
-                  <TaskCardWithData
-                    key={i}
-                    taskId={BigInt(i)}
-                    index={i}
-                    isTeamLead={!!isTeamLead}
-                    onClick={handleTaskClick}
-                    onComplete={handleComplete}
-                    onVerify={handleVerify}
-                    onClaim={handleClaim}
-                    onForfeit={handleForfeit}
-                    isCompleting={isCompleting}
-                    isVerifying={isVerifying}
-                    isClaiming={isClaiming}
-                    isForfeiting={isForfeiting}
-                  />
-                ))}
-              </div>
+              <>
+                {/* Hidden task loaders to fetch all tasks */}
+                <div className="hidden">
+                  {Array.from({ length: taskCount }, (_, i) => (
+                    <TaskCardWithData
+                      key={`loader-${i}`}
+                      taskId={BigInt(i)}
+                      index={i}
+                      isTeamLead={!!isTeamLead}
+                      onClick={handleTaskClick}
+                      onComplete={handleComplete}
+                      onVerify={handleVerify}
+                      onClaim={handleClaim}
+                      onForfeit={handleForfeit}
+                      isCompleting={isCompleting}
+                      isVerifying={isVerifying}
+                      isClaiming={isClaiming}
+                      isForfeiting={isForfeiting}
+                      onTaskLoaded={handleTaskLoaded}
+                    />
+                  ))}
+                </div>
+
+                {/* Visible filtered and sorted tasks */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  {sortAndFilterTasks(allTasks, filter).map((task, idx) => (
+                    <TaskCard
+                      key={task.id.toString()}
+                      task={task}
+                      index={idx}
+                      isTeamLead={!!isTeamLead}
+                      onClick={() => handleTaskClick(task)}
+                      onComplete={handleComplete}
+                      onVerify={handleVerify}
+                      onClaim={handleClaim}
+                      onForfeit={handleForfeit}
+                      isCompleting={isCompleting}
+                      isVerifying={isVerifying}
+                      isClaiming={isClaiming}
+                      isForfeiting={isForfeiting}
+                    />
+                  ))}
+                </div>
+              </>
             )}
           </div>
         )}
