@@ -1,6 +1,6 @@
 # 🎯 Micro-Incentive To-Do List for Teams
 
-A decentralized task management application built on **Mantle Blockchain** that gamifies productivity through crypto staking. Team members stake MNT tokens on their tasks — complete on time to get your stake back, or fund the team party! 🎉
+A decentralized task management application built on **Mantle Blockchain** that gamifies productivity through crypto staking. Team members stake MNT tokens on their tasks — complete on time to get your stake back, or fund the team party!
 
 ![Mantle](https://img.shields.io/badge/Mantle-Sepolia-blue?style=for-the-badge)
 ![Solidity](https://img.shields.io/badge/Solidity-0.8.24-363636?style=for-the-badge&logo=solidity)

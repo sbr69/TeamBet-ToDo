@@ -32,67 +32,26 @@ interface TaskCardProps {
 }
 
 function getTaskStatus(task: Task, isDeadlinePassed: boolean) {
-    if (task.isVerified) {
-        return {
-            color: 'text-green-400',
-            bg: 'bg-green-400/10',
-            border: 'border-green-400/30',
-            icon: CheckCircle2,
-            label: 'Verified',
-        };
-    }
-    if (task.isCompleted) {
-        return {
-            color: 'text-blue-400',
-            bg: 'bg-blue-400/10',
-            border: 'border-blue-400/30',
-            icon: Clock,
-            label: 'Awaiting Verification',
-        };
-    }
-    if (isDeadlinePassed) {
-        return {
-            color: 'text-red-400',
-            bg: 'bg-red-400/10',
-            border: 'border-red-400/30',
-            icon: AlertCircle,
-            label: 'Failed',
-        };
-    }
-    return {
-        color: 'text-yellow-400',
-        bg: 'bg-yellow-400/10',
-        border: 'border-yellow-400/30',
-        icon: Timer,
-        label: 'In Progress',
-    };
+    if (task.isVerified) return { color: 'text-green-400', bg: 'bg-green-400/10', border: 'border-green-400/30', icon: CheckCircle2, label: 'Verified' };
+    if (task.isCompleted) return { color: 'text-blue-400', bg: 'bg-blue-400/10', border: 'border-blue-400/30', icon: Clock, label: 'Awaiting Verification' };
+    if (isDeadlinePassed) return { color: 'text-red-400', bg: 'bg-red-400/10', border: 'border-red-400/30', icon: AlertCircle, label: 'Failed' };
+    return { color: 'text-yellow-400', bg: 'bg-yellow-400/10', border: 'border-yellow-400/30', icon: Timer, label: 'In Progress' };
 }
 
 function formatDeadline(deadline: bigint): string {
-    const date = new Date(Number(deadline) * 1000);
-    return date.toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
+    return new Date(Number(deadline) * 1000).toLocaleDateString('en-US', {
+        month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
     });
 }
 
 function getTimeRemaining(deadline: bigint): string {
-    const now = Date.now();
-    const deadlineMs = Number(deadline) * 1000;
-    const diff = deadlineMs - now;
-
+    const diff = Number(deadline) * 1000 - Date.now();
     if (diff <= 0) return 'Expired';
 
     const hours = Math.floor(diff / (1000 * 60 * 60));
-    const days = Math.floor(hours / 24);
-
-    if (days > 0) return `${days}d ${hours % 24}h left`;
+    if (hours >= 24) return `${Math.floor(hours / 24)}d ${hours % 24}h left`;
     if (hours > 0) return `${hours}h left`;
-
-    const minutes = Math.floor(diff / (1000 * 60));
-    return `${minutes}m left`;
+    return `${Math.floor(diff / (1000 * 60))}m left`;
 }
 
 export function TaskCard({
@@ -141,12 +100,10 @@ export function TaskCard({
                 'h-[120px] flex flex-col'
             )}
         >
-            {/* Header Row - Task ID, Status Badge, and Action Buttons */}
             <div className="flex items-center justify-between gap-2 mb-2">
                 <span className="text-xs text-zinc-500">Task #{task.id.toString()}</span>
 
                 <div className="flex items-center gap-2">
-                    {/* Compact Action Buttons */}
                     {canComplete && (
                         <motion.button
                             whileHover={{ scale: 1.1 }}
@@ -199,7 +156,6 @@ export function TaskCard({
                         </motion.button>
                     )}
 
-                    {/* Status Badge */}
                     <div
                         className={clsx(
                             'flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium',
@@ -212,12 +168,10 @@ export function TaskCard({
                 </div>
             </div>
 
-            {/* Task Content */}
             <h3 className="text-base font-semibold text-white mb-auto line-clamp-1">
                 {task.content}
             </h3>
 
-            {/* Meta Info - Bottom Row */}
             <div className="flex items-center gap-4 text-xs mt-2">
                 <div className="flex items-center gap-1 text-zinc-400">
                     <User className="w-3.5 h-3.5" />
@@ -236,7 +190,6 @@ export function TaskCard({
                 </div>
             </div>
 
-            {/* Hover Glow Effect */}
             <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-green-500/0 via-green-500/5 to-emerald-500/0 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
         </motion.div>
     );

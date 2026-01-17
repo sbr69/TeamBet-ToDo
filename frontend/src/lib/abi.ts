@@ -1,7 +1,7 @@
 // ToDo Contract ABI - Generated from contracts/out/ToDo.sol/ToDo.json
 // Enhanced version with staking, deadlines, team lead, and party fund
 
-export const TODO_CONTRACT_ADDRESS = '0x12E3B76Fc114b531eA699e1fA6f9F9222C031BD0' as const; // Deployed on Mantle Sepolia
+export const TODO_CONTRACT_ADDRESS = '0x13F13f18630af4780A46CB5F9c34Fc9202b4b31d' as const; // Deployed on Mantle Sepolia
 
 export const TODO_ABI = [
     // Constructor (for reference)

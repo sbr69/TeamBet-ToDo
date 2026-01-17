@@ -70,7 +70,6 @@ export function StatsCard({ title, value, subtitle, icon: Icon, color, index }: 
                 </div>
             </div>
 
-            {/* Decorative gradient line */}
             <div className={clsx('absolute bottom-0 left-6 right-6 h-0.5 rounded-full bg-gradient-to-r opacity-50', config.gradient)} />
         </motion.div>
     );

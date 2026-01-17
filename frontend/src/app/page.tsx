@@ -13,36 +13,24 @@ import { TaskDetailModal } from '@/components/TaskDetailModal';
 import { useToDo, useTask } from '@/hooks/useToDo';
 import { useToast } from '@/components/Toast';
 
-// Helper function to determine task status
 type TaskStatus = 'in-progress' | 'verified' | 'failed';
 
 function getTaskStatus(task: Task): TaskStatus {
   const isDeadlinePassed = Date.now() > Number(task.deadline) * 1000;
-
   if (task.isVerified) return 'verified';
   if (isDeadlinePassed) return 'failed';
   return 'in-progress';
 }
 
-// Helper function to sort and filter tasks
 function sortAndFilterTasks(
   tasks: Task[],
   filter: 'all' | TaskStatus
 ): Task[] {
-  // Filter tasks based on selected filter
-  let filtered = tasks;
-  if (filter !== 'all') {
-    filtered = tasks.filter(task => getTaskStatus(task) === filter);
-  }
+  let filtered = filter === 'all' ? tasks : tasks.filter(task => getTaskStatus(task) === filter);
 
-  // Sort by deadline proximity (nearest first)
-  const sortedByDeadline = [...filtered].sort((a, b) => {
-    const deadlineA = Number(a.deadline);
-    const deadlineB = Number(b.deadline);
-    return deadlineA - deadlineB;
-  });
+  const sortedByDeadline = [...filtered].sort((a, b) => Number(a.deadline) - Number(b.deadline));
 
-  // If "all" filter, group by status priority: in-progress -> verified -> failed
+  // Group by status when showing all tasks
   if (filter === 'all') {
     const inProgress = sortedByDeadline.filter(t => getTaskStatus(t) === 'in-progress');
     const verified = sortedByDeadline.filter(t => getTaskStatus(t) === 'verified');
@@ -53,7 +41,6 @@ function sortAndFilterTasks(
   return sortedByDeadline;
 }
 
-// Component to fetch and display a single task
 function TaskCardWithData({
   taskId,
   index,
@@ -85,17 +72,13 @@ function TaskCardWithData({
 }) {
   const { task, isLoading, refetch } = useTask(taskId);
 
-  // Refetch task data periodically to update status
   useEffect(() => {
-    const interval = setInterval(() => refetch(), 10000);
+    const interval = setInterval(refetch, 10000);
     return () => clearInterval(interval);
   }, [refetch]);
 
-  // Notify parent when task is loaded
   useEffect(() => {
-    if (task && onTaskLoaded) {
-      onTaskLoaded(task);
-    }
+    if (task && onTaskLoaded) onTaskLoaded(task);
   }, [task?.id, task?.isCompleted, task?.isVerified, task?.deadline, onTaskLoaded]);
 
   if (isLoading || !task) {
@@ -133,10 +116,6 @@ export default function Home() {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [allTasks, setAllTasks] = useState<Task[]>([]);
   const { address, isConnected } = useAccount();
-
-  const activeTasksCount = useMemo(() => {
-    return allTasks.filter(t => getTaskStatus(t) === 'in-progress').length;
-  }, [allTasks]);
   const { showToast, updateToast } = useToast();
   const [actionToastId, setActionToastId] = useState<string | null>(null);
 
@@ -177,9 +156,13 @@ export default function Home() {
     resetWithdraw,
   } = useToDo();
 
+  const activeTasksCount = useMemo(() =>
+    allTasks.filter(t => getTaskStatus(t) === 'in-progress').length,
+    [allTasks]
+  );
+
   const isTeamLead = address && teamLead && address.toLowerCase() === teamLead.toLowerCase();
 
-  // Handle action success/error
   useEffect(() => {
     if (isCompleteSuccess) {
       if (actionToastId) updateToast(actionToastId, 'success', 'Task Completed!', 'Awaiting team lead verification');
@@ -256,35 +239,21 @@ export default function Home() {
     setIsDetailModalOpen(true);
   };
 
-  // Callback to collect loaded tasks (memoized to prevent infinite loops)
   const handleTaskLoaded = useCallback((task: Task) => {
     setAllTasks(prev => {
-      // Check if task already exists
       const exists = prev.some(t => t.id === task.id);
-      if (exists) {
-        // Update existing task
-        return prev.map(t => t.id === task.id ? task : t);
-      }
-      // Add new task
-      return [...prev, task];
+      return exists ? prev.map(t => t.id === task.id ? task : t) : [...prev, task];
     });
   }, []);
 
-  // Reset allTasks when taskCount changes
-  useEffect(() => {
-    setAllTasks([]);
-  }, [taskCount]);
+  useEffect(() => setAllTasks([]), [taskCount]);
 
   return (
     <div className="min-h-screen bg-zinc-950">
       <Navbar />
-
-      {/* Background Pattern */}
       <div className="fixed inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-zinc-900 via-zinc-950 to-black pointer-events-none" />
 
-      {/* Main Content */}
       <main className="relative pt-24 pb-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
-        {/* Header Section */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -305,7 +274,6 @@ export default function Home() {
           </p>
         </motion.div>
 
-        {/* Stats Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
           <StatsCard
             title="Tasks"
@@ -341,7 +309,6 @@ export default function Home() {
           />
         </div>
 
-        {/* Not Connected State */}
         {!isConnected && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -356,7 +323,6 @@ export default function Home() {
           </motion.div>
         )}
 
-        {/* Task List Section */}
         {isConnected && (
           <div className="space-y-6">
             <div className="flex items-center justify-between">
@@ -370,7 +336,6 @@ export default function Home() {
                   Active Tasks
                 </motion.h2>
 
-                {/* Filter Dropdown */}
                 {taskCount > 0 && (
                   <motion.div
                     initial={{ opacity: 0, x: -20 }}
@@ -404,11 +369,7 @@ export default function Home() {
                     <AnimatePresence>
                       {isFilterOpen && (
                         <>
-                          {/* Backdrop to close dropdown */}
-                          <div
-                            className="fixed inset-0 z-10"
-                            onClick={() => setIsFilterOpen(false)}
-                          />
+                          <div className="fixed inset-0 z-10" onClick={() => setIsFilterOpen(false)} />
                           <motion.div
                             initial={{ opacity: 0, y: 10, scale: 0.95 }}
                             animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -492,51 +453,49 @@ export default function Home() {
 
             {/* Task Cards Grid */}
             {taskCount > 0 && (
-              <>
-                {/* Hidden task loaders to fetch all tasks */}
-                <div className="hidden">
-                  {Array.from({ length: taskCount }, (_, i) => (
-                    <TaskCardWithData
-                      key={`loader-${i}`}
-                      taskId={BigInt(i)}
-                      index={i}
-                      isTeamLead={!!isTeamLead}
-                      onClick={handleTaskClick}
-                      onComplete={handleComplete}
-                      onVerify={handleVerify}
-                      onClaim={handleClaim}
-                      onForfeit={handleForfeit}
-                      isCompleting={isCompleting}
-                      isVerifying={isVerifying}
-                      isClaiming={isClaiming}
-                      isForfeiting={isForfeiting}
-                      onTaskLoaded={handleTaskLoaded}
-                    />
-                  ))}
-                </div>
-
-                {/* Visible filtered and sorted tasks */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                  {sortAndFilterTasks(allTasks, filter).map((task, idx) => (
-                    <TaskCard
-                      key={task.id.toString()}
-                      task={task}
-                      index={idx}
-                      isTeamLead={!!isTeamLead}
-                      onClick={() => handleTaskClick(task)}
-                      onComplete={handleComplete}
-                      onVerify={handleVerify}
-                      onClaim={handleClaim}
-                      onForfeit={handleForfeit}
-                      isCompleting={isCompleting}
-                      isVerifying={isVerifying}
-                      isClaiming={isClaiming}
-                      isForfeiting={isForfeiting}
-                    />
-                  ))}
-                </div>
-              </>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                {sortAndFilterTasks(allTasks, filter).map((task, idx) => (
+                  <TaskCard
+                    key={task.id.toString()}
+                    task={task}
+                    index={idx}
+                    isTeamLead={!!isTeamLead}
+                    onClick={() => handleTaskClick(task)}
+                    onComplete={handleComplete}
+                    onVerify={handleVerify}
+                    onClaim={handleClaim}
+                    onForfeit={handleForfeit}
+                    isCompleting={isCompleting}
+                    isVerifying={isVerifying}
+                    isClaiming={isClaiming}
+                    isForfeiting={isForfeiting}
+                  />
+                ))}
+              </div>
             )}
+          </div>
+        )}
+
+        {taskCount > 0 && (
+          <div className="hidden">
+            {Array.from({ length: taskCount }, (_, i) => (
+              <TaskCardWithData
+                key={`loader-${i}`}
+                taskId={BigInt(i)}
+                index={i}
+                isTeamLead={!!isTeamLead}
+                onClick={handleTaskClick}
+                onComplete={handleComplete}
+                onVerify={handleVerify}
+                onClaim={handleClaim}
+                onForfeit={handleForfeit}
+                isCompleting={isCompleting}
+                isVerifying={isVerifying}
+                isClaiming={isClaiming}
+                isForfeiting={isForfeiting}
+                onTaskLoaded={handleTaskLoaded}
+              />
+            ))}
           </div>
         )}
       </main>
