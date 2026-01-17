@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, ListTodo, Coins, Clock, PartyPopper, Wallet, Shield, Filter } from 'lucide-react';
 import { useAccount } from 'wagmi';
 import { formatEther } from 'viem';
@@ -130,6 +130,7 @@ export default function Home() {
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [filter, setFilter] = useState<'all' | TaskStatus>('all');
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [allTasks, setAllTasks] = useState<Task[]>([]);
   const { address, isConnected } = useAccount();
   const { showToast, updateToast } = useToast();
@@ -373,23 +374,67 @@ export default function Home() {
                     transition={{ duration: 0.5, delay: 0.4 }}
                     className="relative"
                   >
-                    <div className="flex items-center gap-2 px-4 py-2 bg-zinc-900/80 border border-zinc-800 rounded-xl hover:border-zinc-700 transition-colors" style={{ width: '160px' }}>
-                      <Filter className="w-4 h-4 text-zinc-400" />
-                      <select
-                        value={filter}
-                        onChange={(e) => setFilter(e.target.value as 'all' | TaskStatus)}
-                        className="flex-1 bg-transparent text-white text-sm font-medium outline-none cursor-pointer appearance-none"
-                        style={{ width: '100%' }}
+                    <button
+                      onClick={() => setIsFilterOpen(!isFilterOpen)}
+                      className="flex items-center gap-2 px-4 py-2 bg-zinc-900/80 border border-zinc-800 rounded-xl hover:border-zinc-700 transition-all text-sm font-medium text-white min-w-[150px] justify-between"
+                    >
+                      <div className="flex items-center gap-2">
+                        <Filter className="w-4 h-4 text-zinc-400" />
+                        <span>
+                          {filter === 'all' ? 'All Tasks' :
+                            filter === 'in-progress' ? 'In Progress' :
+                              filter.charAt(0).toUpperCase() + filter.slice(1)}
+                        </span>
+                      </div>
+                      <motion.svg
+                        animate={{ rotate: isFilterOpen ? 180 : 0 }}
+                        className="w-4 h-4 text-zinc-400"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
                       >
-                        <option value="all" className="bg-zinc-900">All Tasks</option>
-                        <option value="in-progress" className="bg-zinc-900">In Progress</option>
-                        <option value="verified" className="bg-zinc-900">Verified</option>
-                        <option value="failed" className="bg-zinc-900">Failed</option>
-                      </select>
-                      <svg className="w-4 h-4 text-zinc-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                      </svg>
-                    </div>
+                      </motion.svg>
+                    </button>
+
+                    <AnimatePresence>
+                      {isFilterOpen && (
+                        <>
+                          {/* Backdrop to close dropdown */}
+                          <div
+                            className="fixed inset-0 z-10"
+                            onClick={() => setIsFilterOpen(false)}
+                          />
+                          <motion.div
+                            initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                            transition={{ duration: 0.2 }}
+                            className="absolute left-0 top-full mt-2 w-full min-w-[150px] bg-zinc-900/90 backdrop-blur-xl border border-zinc-800 rounded-xl shadow-2xl z-20 overflow-hidden"
+                          >
+                            {(['all', 'in-progress', 'verified', 'failed'] as const).map((option) => (
+                              <button
+                                key={option}
+                                onClick={() => {
+                                  setFilter(option);
+                                  setIsFilterOpen(false);
+                                }}
+                                className={`w-full px-4 py-2.5 text-left text-sm transition-colors flex items-center justify-between
+                                  ${filter === option ? 'bg-purple-500/10 text-purple-400' : 'text-zinc-400 hover:bg-zinc-800 hover:text-white'}
+                                `}
+                              >
+                                {option === 'all' ? 'All Tasks' :
+                                  option === 'in-progress' ? 'In Progress' :
+                                    option.charAt(0).toUpperCase() + option.slice(1)}
+                                {filter === option && (
+                                  <div className="w-1.5 h-1.5 rounded-full bg-purple-400 shadow-[0_0_8px_rgba(168,85,247,0.5)]" />
+                                )}
+                              </button>
+                            ))}
+                          </motion.div>
+                        </>
+                      )}
+                    </AnimatePresence>
                   </motion.div>
                 )}
               </div>
