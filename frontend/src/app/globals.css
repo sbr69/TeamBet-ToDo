@@ -10,7 +10,7 @@ body {
   color: var(--foreground);
 }
 
-/* Custom scrollbar for dark theme */
+/* Custom scrollbar for dark theme - default visible */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
@@ -27,6 +27,18 @@ body {
 
 ::-webkit-scrollbar-thumb:hover {
   background: #52525b;
+}
+
+/* Utility to hide scrollbar but keep functionality */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  /* IE and Edge */
+  scrollbar-width: none;
+  /* Firefox */
 }
 
 /* Date/time input styling for dark mode */
@@ -46,4 +58,17 @@ button:focus {
 ::selection {
   background: rgba(34, 197, 94, 0.3);
   color: white;
+}
+
+/* Hide number input spinners */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none !important;
+  margin: 0 !important;
+  display: none !important;
+}
+
+input[type="number"] {
+  -moz-appearance: textfield !important;
+  appearance: textfield !important;
 }

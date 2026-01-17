@@ -246,7 +246,12 @@ export default function Home() {
     });
   }, []);
 
-  useEffect(() => setAllTasks([]), [taskCount]);
+  // Only reset tasks when taskCount decreases (e.g., on contract reset) or goes to 0
+  useEffect(() => {
+    if (taskCount === 0) {
+      setAllTasks([]);
+    }
+  }, [taskCount]);
 
   return (
     <div className="min-h-screen bg-zinc-950">
@@ -285,7 +290,7 @@ export default function Home() {
           />
           <StatsCard
             title="Min Stake"
-            value={`${formatEther(minStake)} MNT`}
+            value="0.1 MNT"
             subtitle="Per task"
             icon={Coins}
             color="green"

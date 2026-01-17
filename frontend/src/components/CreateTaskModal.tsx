@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Plus, FileText, Loader2, Coins, Calendar } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useToast } from './Toast';
+import { DatePicker, TimePicker } from './DateTimePicker';
 
 interface CreateTaskModalProps {
     isOpen: boolean;
@@ -27,11 +28,13 @@ export function CreateTaskModal({
     minStake
 }: CreateTaskModalProps) {
     const [content, setContent] = useState('');
-    const [stakeAmount, setStakeAmount] = useState('0.001');
+    const [stakeAmount, setStakeAmount] = useState('');
     const [deadlineDate, setDeadlineDate] = useState('');
     const [deadlineTime, setDeadlineTime] = useState('');
     const { showToast, updateToast } = useToast();
     const [toastId, setToastId] = useState<string | null>(null);
+    const [errors, setErrors] = useState<{ content?: string; stakeAmount?: string; deadline?: string }>({});
+    const [hasSubmitted, setHasSubmitted] = useState(false);
 
     // Set default deadline to tomorrow
     useEffect(() => {
@@ -39,7 +42,7 @@ export function CreateTaskModal({
             const tomorrow = new Date();
             tomorrow.setDate(tomorrow.getDate() + 1);
             setDeadlineDate(tomorrow.toISOString().split('T')[0]);
-            setDeadlineTime('12:00');
+            setDeadlineTime('00:00');
         }
     }, [isOpen]);
 
@@ -50,7 +53,9 @@ export function CreateTaskModal({
                 updateToast(toastId, 'success', 'Task Created!', `Staked ${stakeAmount} MNT`);
             }
             setContent('');
-            setStakeAmount('0.001');
+            setStakeAmount('');
+            setErrors({});
+            setHasSubmitted(false);
             setToastId(null);
             onReset();
             onClose();
@@ -70,9 +75,40 @@ export function CreateTaskModal({
         }
     }, [error, toastId, updateToast, showToast, onReset]);
 
+    const validateFields = () => {
+        const newErrors: { content?: string; stakeAmount?: string; deadline?: string } = {};
+
+        if (!content.trim()) {
+            newErrors.content = 'Task description is required';
+        }
+
+        if (!stakeAmount || stakeAmount.trim() === '') {
+            newErrors.stakeAmount = 'Stake amount is required';
+        } else if (parseFloat(stakeAmount) < 0.1) {
+            newErrors.stakeAmount = 'Minimum stake is 0.1 MNT';
+        }
+
+        if (!deadlineDate || !deadlineTime) {
+            newErrors.deadline = 'Deadline date and time are required';
+        }
+
+        return newErrors;
+    };
+
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        if (!content.trim() || !deadlineDate || !deadlineTime) return;
+
+        // Mark as submitted to show errors
+        setHasSubmitted(true);
+
+        // Validate all fields
+        const validationErrors = validateFields();
+        setErrors(validationErrors);
+
+        // If there are errors, don't submit
+        if (Object.keys(validationErrors).length > 0) {
+            return;
+        }
 
         // Convert deadline to unix timestamp
         const deadlineStr = `${deadlineDate}T${deadlineTime}`;
@@ -86,14 +122,16 @@ export function CreateTaskModal({
     const handleClose = () => {
         if (!isCreating) {
             setContent('');
+            setStakeAmount('');
+            setErrors({});
+            setHasSubmitted(false);
             onClose();
         }
     };
 
-    // Format min stake for display
-    const minStakeDisplay = minStake > BigInt(0)
-        ? (Number(minStake) / 1e18).toFixed(4)
-        : '0.001';
+
+    // Always show 0.1 as minimum stake (frontend validation)
+    const minStakeDisplay = '0.1';
 
     return (
         <AnimatePresence>
@@ -148,8 +186,17 @@ export function CreateTaskModal({
                                         placeholder="Describe your task..."
                                         rows={3}
                                         disabled={isCreating}
-                                        className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500 transition-all resize-none disabled:opacity-50"
+                                        className={`w-full px-4 py-3 bg-zinc-800 border rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:ring-2 transition-all resize-none disabled:opacity-50 ${hasSubmitted && errors.content
+                                            ? 'border-red-500 focus:ring-red-500/50 focus:border-red-500'
+                                            : 'border-zinc-700 focus:ring-green-500/50 focus:border-green-500'
+                                            }`}
                                     />
+                                    {hasSubmitted && errors.content && (
+                                        <p className="text-xs text-red-400 flex items-center gap-1 mt-1">
+                                            <span className="inline-block w-1 h-1 bg-red-400 rounded-full"></span>
+                                            {errors.content}
+                                        </p>
+                                    )}
                                 </div>
 
                                 {/* Stake Amount */}
@@ -162,13 +209,23 @@ export function CreateTaskModal({
                                         type="number"
                                         value={stakeAmount}
                                         onChange={(e) => setStakeAmount(e.target.value)}
-                                        placeholder="0.001"
-                                        step="0.001"
-                                        min={minStakeDisplay}
+                                        placeholder="0.1"
+                                        step="0.01"
+                                        min="0.1"
                                         disabled={isCreating}
-                                        className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500 transition-all disabled:opacity-50"
+                                        className={`w-full px-4 py-3 bg-zinc-800 border rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:ring-2 transition-all disabled:opacity-50 ${hasSubmitted && errors.stakeAmount
+                                            ? 'border-red-500 focus:ring-red-500/50 focus:border-red-500'
+                                            : 'border-zinc-700 focus:ring-green-500/50 focus:border-green-500'
+                                            }`}
                                     />
-                                    <p className="text-xs text-zinc-500">Minimum: {minStakeDisplay} MNT</p>
+                                    {hasSubmitted && errors.stakeAmount ? (
+                                        <p className="text-xs text-red-400 flex items-center gap-1 mt-1">
+                                            <span className="inline-block w-1 h-1 bg-red-400 rounded-full"></span>
+                                            {errors.stakeAmount}
+                                        </p>
+                                    ) : (
+                                        <p className="text-xs text-zinc-500">Minimum: {minStakeDisplay} MNT</p>
+                                    )}
                                 </div>
 
                                 {/* Deadline */}
@@ -178,22 +235,28 @@ export function CreateTaskModal({
                                         Deadline
                                     </label>
                                     <div className="flex gap-2">
-                                        <input
-                                            type="date"
-                                            value={deadlineDate}
-                                            onChange={(e) => setDeadlineDate(e.target.value)}
-                                            min={new Date().toISOString().split('T')[0]}
-                                            disabled={isCreating}
-                                            className="flex-1 px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500 transition-all disabled:opacity-50"
-                                        />
-                                        <input
-                                            type="time"
-                                            value={deadlineTime}
-                                            onChange={(e) => setDeadlineTime(e.target.value)}
-                                            disabled={isCreating}
-                                            className="w-32 px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500 transition-all disabled:opacity-50"
-                                        />
+                                        <div className="flex-1">
+                                            <DatePicker
+                                                value={deadlineDate}
+                                                onChange={setDeadlineDate}
+                                                minDate={new Date().toISOString().split('T')[0]}
+                                                hasError={hasSubmitted && !!errors.deadline}
+                                            />
+                                        </div>
+                                        <div>
+                                            <TimePicker
+                                                value={deadlineTime}
+                                                onChange={setDeadlineTime}
+                                                hasError={hasSubmitted && !!errors.deadline}
+                                            />
+                                        </div>
                                     </div>
+                                    {hasSubmitted && errors.deadline && (
+                                        <p className="text-xs text-red-400 flex items-center gap-1 mt-1">
+                                            <span className="inline-block w-1 h-1 bg-red-400 rounded-full"></span>
+                                            {errors.deadline}
+                                        </p>
+                                    )}
                                 </div>
 
                                 {/* Info Note */}
@@ -209,7 +272,7 @@ export function CreateTaskModal({
                                     type="submit"
                                     whileHover={{ scale: isCreating ? 1 : 1.02 }}
                                     whileTap={{ scale: isCreating ? 1 : 0.98 }}
-                                    disabled={isCreating || !content.trim() || !deadlineDate || !deadlineTime}
+                                    disabled={isCreating}
                                     className="w-full py-3.5 bg-gradient-to-r from-green-500 to-emerald-600 text-white font-semibold rounded-xl hover:from-green-600 hover:to-emerald-700 transition-all shadow-lg shadow-green-500/25 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                                 >
                                     {isCreating ? (
@@ -220,7 +283,7 @@ export function CreateTaskModal({
                                     ) : (
                                         <>
                                             <Plus className="w-5 h-5" />
-                                            Create Task & Stake {stakeAmount} MNT
+                                            Create Task {stakeAmount ? `& Stake ${stakeAmount} MNT` : ''}
                                         </>
                                     )}
                                 </motion.button>
