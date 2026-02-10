@@ -1,7 +1,6 @@
 import { connectorsForWallets } from '@rainbow-me/rainbowkit';
 import {
   injectedWallet,
-  walletConnectWallet,
 } from '@rainbow-me/rainbowkit/wallets';
 import { createConfig, http } from 'wagmi';
 import { defineChain } from 'viem';
@@ -37,7 +36,6 @@ const connectors = connectorsForWallets(
       groupName: 'Connect',
       wallets: [
         injectedWallet,
-        walletConnectWallet,
       ],
     },
   ],
