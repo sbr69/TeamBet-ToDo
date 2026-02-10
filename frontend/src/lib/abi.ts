@@ -1,15 +1,9 @@
-// ToDo Contract ABI - Generated from contracts/out/ToDo.sol/ToDo.json
-// Enhanced version with staking, deadlines, team lead, and party fund
+// ToDo Contract ABI - Multi-team version with team creation, joining, and member names
+// Contract deployed on Mantle Sepolia
 
-export const TODO_CONTRACT_ADDRESS = '0x13F13f18630af4780A46CB5F9c34Fc9202b4b31d' as const; // Deployed on Mantle Sepolia
+export const TODO_CONTRACT_ADDRESS = '0x874CCE89541100c9C6E1E9a841072e0fe1b0Be12' as const;
 
 export const TODO_ABI = [
-    // Constructor (for reference)
-    {
-        type: 'constructor',
-        inputs: [{ name: '_teamLead', type: 'address', internalType: 'address' }],
-        stateMutability: 'nonpayable',
-    },
     // Read Functions
     {
         type: 'function',
@@ -27,16 +21,9 @@ export const TODO_ABI = [
     },
     {
         type: 'function',
-        name: 'partyFund',
+        name: 'teamCount',
         inputs: [],
         outputs: [{ name: '', type: 'uint256', internalType: 'uint256' }],
-        stateMutability: 'view',
-    },
-    {
-        type: 'function',
-        name: 'teamLead',
-        inputs: [],
-        outputs: [{ name: '', type: 'address', internalType: 'address' }],
         stateMutability: 'view',
     },
     {
@@ -52,13 +39,80 @@ export const TODO_ABI = [
                     { name: 'id', type: 'uint256', internalType: 'uint256' },
                     { name: 'content', type: 'string', internalType: 'string' },
                     { name: 'owner', type: 'address', internalType: 'address' },
+                    { name: 'ownerName', type: 'string', internalType: 'string' },
                     { name: 'stakedAmount', type: 'uint256', internalType: 'uint256' },
                     { name: 'deadline', type: 'uint256', internalType: 'uint256' },
                     { name: 'isCompleted', type: 'bool', internalType: 'bool' },
                     { name: 'isVerified', type: 'bool', internalType: 'bool' },
+                    { name: 'teamCode', type: 'bytes32', internalType: 'bytes32' },
                 ],
             },
         ],
+        stateMutability: 'view',
+    },
+    {
+        type: 'function',
+        name: 'getTeam',
+        inputs: [{ name: '_teamCode', type: 'bytes32', internalType: 'bytes32' }],
+        outputs: [
+            { name: 'name', type: 'string', internalType: 'string' },
+            { name: 'lead', type: 'address', internalType: 'address' },
+            { name: 'leadName', type: 'string', internalType: 'string' },
+            { name: 'memberCount', type: 'uint256', internalType: 'uint256' },
+            { name: 'taskCount_', type: 'uint256', internalType: 'uint256' },
+            { name: 'partyFund_', type: 'uint256', internalType: 'uint256' },
+        ],
+        stateMutability: 'view',
+    },
+    {
+        type: 'function',
+        name: 'getTeamMembers',
+        inputs: [{ name: '_teamCode', type: 'bytes32', internalType: 'bytes32' }],
+        outputs: [
+            { name: '', type: 'address[]', internalType: 'address[]' },
+            { name: '', type: 'string[]', internalType: 'string[]' },
+        ],
+        stateMutability: 'view',
+    },
+    {
+        type: 'function',
+        name: 'getTeamTaskIds',
+        inputs: [{ name: '_teamCode', type: 'bytes32', internalType: 'bytes32' }],
+        outputs: [{ name: '', type: 'uint256[]', internalType: 'uint256[]' }],
+        stateMutability: 'view',
+    },
+    {
+        type: 'function',
+        name: 'getTeamPartyFund',
+        inputs: [{ name: '_teamCode', type: 'bytes32', internalType: 'bytes32' }],
+        outputs: [{ name: '', type: 'uint256', internalType: 'uint256' }],
+        stateMutability: 'view',
+    },
+    {
+        type: 'function',
+        name: 'getMemberName',
+        inputs: [
+            { name: '_teamCode', type: 'bytes32', internalType: 'bytes32' },
+            { name: '_member', type: 'address', internalType: 'address' },
+        ],
+        outputs: [{ name: '', type: 'string', internalType: 'string' }],
+        stateMutability: 'view',
+    },
+    {
+        type: 'function',
+        name: 'isMember',
+        inputs: [
+            { name: '', type: 'bytes32', internalType: 'bytes32' },
+            { name: '', type: 'address', internalType: 'address' },
+        ],
+        outputs: [{ name: '', type: 'bool', internalType: 'bool' }],
+        stateMutability: 'view',
+    },
+    {
+        type: 'function',
+        name: 'getUserTeams',
+        inputs: [{ name: '_user', type: 'address', internalType: 'address' }],
+        outputs: [{ name: '', type: 'bytes32[]', internalType: 'bytes32[]' }],
         stateMutability: 'view',
     },
     {
@@ -76,18 +130,55 @@ export const TODO_ABI = [
             { name: 'id', type: 'uint256', internalType: 'uint256' },
             { name: 'content', type: 'string', internalType: 'string' },
             { name: 'owner', type: 'address', internalType: 'address' },
+            { name: 'ownerName', type: 'string', internalType: 'string' },
             { name: 'stakedAmount', type: 'uint256', internalType: 'uint256' },
             { name: 'deadline', type: 'uint256', internalType: 'uint256' },
             { name: 'isCompleted', type: 'bool', internalType: 'bool' },
             { name: 'isVerified', type: 'bool', internalType: 'bool' },
+            { name: 'teamCode', type: 'bytes32', internalType: 'bytes32' },
         ],
         stateMutability: 'view',
     },
     // Write Functions
     {
         type: 'function',
+        name: 'createTeam',
+        inputs: [
+            { name: '_teamName', type: 'string', internalType: 'string' },
+            { name: '_memberName', type: 'string', internalType: 'string' },
+        ],
+        outputs: [{ name: 'teamCode', type: 'bytes32', internalType: 'bytes32' }],
+        stateMutability: 'nonpayable',
+    },
+    {
+        type: 'function',
+        name: 'joinTeam',
+        inputs: [
+            { name: '_teamCode', type: 'bytes32', internalType: 'bytes32' },
+            { name: '_memberName', type: 'string', internalType: 'string' },
+        ],
+        outputs: [],
+        stateMutability: 'nonpayable',
+    },
+    {
+        type: 'function',
+        name: 'leaveTeam',
+        inputs: [{ name: '_teamCode', type: 'bytes32', internalType: 'bytes32' }],
+        outputs: [],
+        stateMutability: 'nonpayable',
+    },
+    {
+        type: 'function',
+        name: 'deleteTeam',
+        inputs: [{ name: '_teamCode', type: 'bytes32', internalType: 'bytes32' }],
+        outputs: [],
+        stateMutability: 'nonpayable',
+    },
+    {
+        type: 'function',
         name: 'createTask',
         inputs: [
+            { name: '_teamCode', type: 'bytes32', internalType: 'bytes32' },
             { name: '_content', type: 'string', internalType: 'string' },
             { name: '_deadline', type: 'uint256', internalType: 'uint256' },
         ],
@@ -125,25 +216,69 @@ export const TODO_ABI = [
     {
         type: 'function',
         name: 'withdrawPartyFund',
-        inputs: [],
+        inputs: [{ name: '_teamCode', type: 'bytes32', internalType: 'bytes32' }],
         outputs: [],
         stateMutability: 'nonpayable',
     },
     {
         type: 'function',
         name: 'transferTeamLead',
-        inputs: [{ name: '_newLead', type: 'address', internalType: 'address' }],
+        inputs: [
+            { name: '_teamCode', type: 'bytes32', internalType: 'bytes32' },
+            { name: '_newLead', type: 'address', internalType: 'address' },
+        ],
         outputs: [],
         stateMutability: 'nonpayable',
     },
     // Events
     {
         type: 'event',
+        name: 'TeamCreated',
+        inputs: [
+            { name: 'teamCode', type: 'bytes32', indexed: true, internalType: 'bytes32' },
+            { name: 'name', type: 'string', indexed: false, internalType: 'string' },
+            { name: 'lead', type: 'address', indexed: true, internalType: 'address' },
+            { name: 'leadName', type: 'string', indexed: false, internalType: 'string' },
+        ],
+        anonymous: false,
+    },
+    {
+        type: 'event',
+        name: 'MemberJoined',
+        inputs: [
+            { name: 'teamCode', type: 'bytes32', indexed: true, internalType: 'bytes32' },
+            { name: 'member', type: 'address', indexed: true, internalType: 'address' },
+            { name: 'memberName', type: 'string', indexed: false, internalType: 'string' },
+        ],
+        anonymous: false,
+    },
+    {
+        type: 'event',
+        name: 'MemberLeft',
+        inputs: [
+            { name: 'teamCode', type: 'bytes32', indexed: true, internalType: 'bytes32' },
+            { name: 'member', type: 'address', indexed: true, internalType: 'address' },
+        ],
+        anonymous: false,
+    },
+    {
+        type: 'event',
+        name: 'TeamDeleted',
+        inputs: [
+            { name: 'teamCode', type: 'bytes32', indexed: true, internalType: 'bytes32' },
+            { name: 'lead', type: 'address', indexed: true, internalType: 'address' },
+        ],
+        anonymous: false,
+    },
+    {
+        type: 'event',
         name: 'TaskCreated',
         inputs: [
             { name: 'taskId', type: 'uint256', indexed: true, internalType: 'uint256' },
+            { name: 'teamCode', type: 'bytes32', indexed: true, internalType: 'bytes32' },
             { name: 'content', type: 'string', indexed: false, internalType: 'string' },
             { name: 'owner', type: 'address', indexed: true, internalType: 'address' },
+            { name: 'ownerName', type: 'string', indexed: false, internalType: 'string' },
             { name: 'stakedAmount', type: 'uint256', indexed: false, internalType: 'uint256' },
             { name: 'deadline', type: 'uint256', indexed: false, internalType: 'uint256' },
         ],
@@ -190,6 +325,7 @@ export const TODO_ABI = [
         type: 'event',
         name: 'PartyFundWithdrawn',
         inputs: [
+            { name: 'teamCode', type: 'bytes32', indexed: true, internalType: 'bytes32' },
             { name: 'to', type: 'address', indexed: true, internalType: 'address' },
             { name: 'amount', type: 'uint256', indexed: false, internalType: 'uint256' },
         ],
@@ -199,17 +335,21 @@ export const TODO_ABI = [
         type: 'event',
         name: 'TeamLeadTransferred',
         inputs: [
+            { name: 'teamCode', type: 'bytes32', indexed: true, internalType: 'bytes32' },
             { name: 'oldLead', type: 'address', indexed: true, internalType: 'address' },
             { name: 'newLead', type: 'address', indexed: true, internalType: 'address' },
         ],
         anonymous: false,
     },
     // Errors
+    { type: 'error', name: 'AlreadyMember', inputs: [] },
     { type: 'error', name: 'DeadlineInPast', inputs: [] },
     { type: 'error', name: 'DeadlineNotPassed', inputs: [] },
     { type: 'error', name: 'EmptyContent', inputs: [] },
+    { type: 'error', name: 'EmptyName', inputs: [] },
     { type: 'error', name: 'InsufficientStake', inputs: [] },
     { type: 'error', name: 'NoFundsToWithdraw', inputs: [] },
+    { type: 'error', name: 'NotAMember', inputs: [] },
     { type: 'error', name: 'NotTaskOwner', inputs: [] },
     { type: 'error', name: 'NotTeamLead', inputs: [] },
     { type: 'error', name: 'StakeAlreadyClaimed', inputs: [] },
@@ -217,8 +357,13 @@ export const TODO_ABI = [
     { type: 'error', name: 'TaskDoesNotExist', inputs: [] },
     { type: 'error', name: 'TaskNotCompleted', inputs: [] },
     { type: 'error', name: 'TaskNotVerified', inputs: [] },
+    { type: 'error', name: 'TeamAlreadyExists', inputs: [] },
+    { type: 'error', name: 'TeamDoesNotExist', inputs: [] },
+    { type: 'error', name: 'TeamHasActiveTasks', inputs: [] },
+    { type: 'error', name: 'TeamHasFunds', inputs: [] },
+    { type: 'error', name: 'MemberHasPendingTasks', inputs: [] },
+    { type: 'error', name: 'CannotLeaveAsLead', inputs: [] },
     { type: 'error', name: 'TransferFailed', inputs: [] },
 ] as const;
 
-// Minimum stake constant (0.001 MNT = 1e15 wei)
 export const MIN_STAKE = BigInt('1000000000000000'); // 0.001 ether

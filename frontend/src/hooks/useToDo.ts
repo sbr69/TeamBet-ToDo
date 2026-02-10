@@ -9,31 +9,224 @@ export interface Task {
     id: bigint;
     content: string;
     owner: `0x${string}`;
+    ownerName: string;
     stakedAmount: bigint;
     deadline: bigint;
     isCompleted: boolean;
     isVerified: boolean;
+    teamCode: `0x${string}`;
 }
 
-export function useToDo() {
-    const { data: nextTaskId, refetch: refetchTaskCount } = useReadContract({
+export interface TeamInfo {
+    name: string;
+    lead: `0x${string}`;
+    leadName: string;
+    memberCount: number;
+    taskCount: number;
+    partyFund: bigint;
+}
+
+export function useTeam(teamCode: `0x${string}` | undefined) {
+    const { data, isLoading, error, refetch } = useReadContract({
         address: TODO_CONTRACT_ADDRESS,
         abi: TODO_ABI,
-        functionName: 'nextTaskId',
+        functionName: 'getTeam',
+        args: teamCode ? [teamCode] : undefined,
+        query: { enabled: !!teamCode },
     });
 
     const { data: partyFund, refetch: refetchPartyFund } = useReadContract({
         address: TODO_CONTRACT_ADDRESS,
         abi: TODO_ABI,
-        functionName: 'partyFund',
+        functionName: 'getTeamPartyFund',
+        args: teamCode ? [teamCode] : undefined,
+        query: { enabled: !!teamCode },
     });
 
-    const { data: teamLead } = useReadContract({
+    const { data: taskIds, refetch: refetchTaskIds } = useReadContract({
         address: TODO_CONTRACT_ADDRESS,
         abi: TODO_ABI,
-        functionName: 'teamLead',
+        functionName: 'getTeamTaskIds',
+        args: teamCode ? [teamCode] : undefined,
+        query: { enabled: !!teamCode },
     });
 
+    const { data: membersData, refetch: refetchMembers } = useReadContract({
+        address: TODO_CONTRACT_ADDRESS,
+        abi: TODO_ABI,
+        functionName: 'getTeamMembers',
+        args: teamCode ? [teamCode] : undefined,
+        query: { enabled: !!teamCode },
+    });
+
+    const team: TeamInfo | undefined = data ? {
+        name: (data as any)[0] as string,
+        lead: (data as any)[1] as `0x${string}`,
+        leadName: (data as any)[2] as string,
+        memberCount: Number((data as any)[3]),
+        taskCount: Number((data as any)[4]),
+        partyFund: (data as any)[5] as bigint,
+    } : undefined;
+
+    const members = membersData ? {
+        addresses: (membersData as any)[0] as `0x${string}`[],
+        names: (membersData as any)[1] as string[],
+    } : undefined;
+
+    return {
+        team,
+        members,
+        taskIds: (taskIds as bigint[]) ?? [],
+        partyFund: (partyFund as bigint) ?? BigInt(0),
+        isLoading,
+        error,
+        refetch: () => {
+            refetch();
+            refetchPartyFund();
+            refetchTaskIds();
+            refetchMembers();
+        },
+    };
+}
+
+export function useIsMember(teamCode: `0x${string}` | undefined, address: `0x${string}` | undefined) {
+    const { data, isLoading } = useReadContract({
+        address: TODO_CONTRACT_ADDRESS,
+        abi: TODO_ABI,
+        functionName: 'isMember',
+        args: teamCode && address ? [teamCode, address] : undefined,
+        query: { enabled: !!teamCode && !!address },
+    });
+
+    return { isMember: data as boolean | undefined, isLoading };
+}
+
+export function useUserTeams(address: `0x${string}` | undefined) {
+    const { data, isLoading, refetch } = useReadContract({
+        address: TODO_CONTRACT_ADDRESS,
+        abi: TODO_ABI,
+        functionName: 'getUserTeams',
+        args: address ? [address] : undefined,
+        query: { enabled: !!address },
+    });
+
+    return {
+        teamCodes: (data as `0x${string}`[]) ?? [],
+        isLoading,
+        refetch,
+    };
+}
+
+export function useTeamActions() {
+    const {
+        writeContract: writeCreateTeam,
+        data: createTeamTxHash,
+        isPending: isCreatingTeam,
+        error: createTeamError,
+        reset: resetCreateTeam,
+    } = useWriteContract();
+
+    const {
+        writeContract: writeJoinTeam,
+        data: joinTeamTxHash,
+        isPending: isJoiningTeam,
+        error: joinTeamError,
+        reset: resetJoinTeam,
+    } = useWriteContract();
+
+    const {
+        writeContract: writeLeaveTeam,
+        data: leaveTeamTxHash,
+        isPending: isLeavingTeam,
+        error: leaveTeamError,
+        reset: resetLeaveTeam,
+    } = useWriteContract();
+
+    const {
+        writeContract: writeDeleteTeam,
+        data: deleteTeamTxHash,
+        isPending: isDeletingTeam,
+        error: deleteTeamError,
+        reset: resetDeleteTeam,
+    } = useWriteContract();
+
+    const { isLoading: isCreateTeamConfirming, isSuccess: isCreateTeamSuccess, data: createTeamReceipt } =
+        useWaitForTransactionReceipt({ hash: createTeamTxHash });
+
+    const { isLoading: isJoinTeamConfirming, isSuccess: isJoinTeamSuccess } =
+        useWaitForTransactionReceipt({ hash: joinTeamTxHash });
+
+    const { isLoading: isLeaveTeamConfirming, isSuccess: isLeaveTeamSuccess } =
+        useWaitForTransactionReceipt({ hash: leaveTeamTxHash });
+
+    const { isLoading: isDeleteTeamConfirming, isSuccess: isDeleteTeamSuccess } =
+        useWaitForTransactionReceipt({ hash: deleteTeamTxHash });
+
+    const createTeam = (teamName: string, memberName: string) => {
+        writeCreateTeam({
+            address: TODO_CONTRACT_ADDRESS,
+            abi: TODO_ABI,
+            functionName: 'createTeam',
+            args: [teamName, memberName],
+        });
+    };
+
+    const joinTeam = (teamCode: `0x${string}`, memberName: string) => {
+        writeJoinTeam({
+            address: TODO_CONTRACT_ADDRESS,
+            abi: TODO_ABI,
+            functionName: 'joinTeam',
+            args: [teamCode, memberName],
+        });
+    };
+
+    const leaveTeam = (teamCode: `0x${string}`) => {
+        writeLeaveTeam({
+            address: TODO_CONTRACT_ADDRESS,
+            abi: TODO_ABI,
+            functionName: 'leaveTeam',
+            args: [teamCode],
+        });
+    };
+
+    const deleteTeam = (teamCode: `0x${string}`) => {
+        writeDeleteTeam({
+            address: TODO_CONTRACT_ADDRESS,
+            abi: TODO_ABI,
+            functionName: 'deleteTeam',
+            args: [teamCode],
+        });
+    };
+
+    return {
+        createTeam,
+        isCreatingTeam: isCreatingTeam || isCreateTeamConfirming,
+        isCreateTeamSuccess,
+        createTeamError,
+        createTeamReceipt,
+        resetCreateTeam,
+
+        joinTeam,
+        isJoiningTeam: isJoiningTeam || isJoinTeamConfirming,
+        isJoinTeamSuccess,
+        joinTeamError,
+        resetJoinTeam,
+
+        leaveTeam,
+        isLeavingTeam: isLeavingTeam || isLeaveTeamConfirming,
+        isLeaveTeamSuccess,
+        leaveTeamError,
+        resetLeaveTeam,
+
+        deleteTeam,
+        isDeletingTeam: isDeletingTeam || isDeleteTeamConfirming,
+        isDeleteTeamSuccess,
+        deleteTeamError,
+        resetDeleteTeam,
+    };
+}
+
+export function useToDo(teamCode: `0x${string}` | undefined) {
     const { data: minStake } = useReadContract({
         address: TODO_CONTRACT_ADDRESS,
         abi: TODO_ABI,
@@ -89,34 +282,19 @@ export function useToDo() {
     } = useWriteContract();
 
     const { isLoading: isCreateConfirming, isSuccess: isCreateSuccess } = useWaitForTransactionReceipt({ hash: createTxHash });
-
-    const { isLoading: isCompleteConfirming, isSuccess: isCompleteSuccess } =
-        useWaitForTransactionReceipt({ hash: completeTxHash });
-
-    const { isLoading: isVerifyConfirming, isSuccess: isVerifySuccess } =
-        useWaitForTransactionReceipt({ hash: verifyTxHash });
-
-    const { isLoading: isClaimConfirming, isSuccess: isClaimSuccess } =
-        useWaitForTransactionReceipt({ hash: claimTxHash });
-
-    const { isLoading: isForfeitConfirming, isSuccess: isForfeitSuccess } =
-        useWaitForTransactionReceipt({ hash: forfeitTxHash });
-
+    const { isLoading: isCompleteConfirming, isSuccess: isCompleteSuccess } = useWaitForTransactionReceipt({ hash: completeTxHash });
+    const { isLoading: isVerifyConfirming, isSuccess: isVerifySuccess } = useWaitForTransactionReceipt({ hash: verifyTxHash });
+    const { isLoading: isClaimConfirming, isSuccess: isClaimSuccess } = useWaitForTransactionReceipt({ hash: claimTxHash });
+    const { isLoading: isForfeitConfirming, isSuccess: isForfeitSuccess } = useWaitForTransactionReceipt({ hash: forfeitTxHash });
     const { isLoading: isWithdrawConfirming, isSuccess: isWithdrawSuccess } = useWaitForTransactionReceipt({ hash: withdrawTxHash });
 
-    useEffect(() => {
-        if (isCreateSuccess || isCompleteSuccess || isVerifySuccess || isClaimSuccess || isForfeitSuccess || isWithdrawSuccess) {
-            refetchTaskCount();
-            refetchPartyFund();
-        }
-    }, [isCreateSuccess, isCompleteSuccess, isVerifySuccess, isClaimSuccess, isForfeitSuccess, isWithdrawSuccess, refetchTaskCount, refetchPartyFund]);
-
     const createTask = (content: string, deadline: bigint, stakeAmount: string) => {
+        if (!teamCode) return;
         writeCreateTask({
             address: TODO_CONTRACT_ADDRESS,
             abi: TODO_ABI,
             functionName: 'createTask',
-            args: [content, deadline],
+            args: [teamCode, content, deadline],
             value: parseEther(stakeAmount),
         });
     };
@@ -158,17 +336,16 @@ export function useToDo() {
     };
 
     const withdrawPartyFund = () => {
+        if (!teamCode) return;
         writeWithdrawPartyFund({
             address: TODO_CONTRACT_ADDRESS,
             abi: TODO_ABI,
             functionName: 'withdrawPartyFund',
+            args: [teamCode],
         });
     };
 
     return {
-        taskCount: nextTaskId ? Number(nextTaskId) : 0,
-        partyFund: partyFund ?? BigInt(0),
-        teamLead: teamLead as `0x${string}` | undefined,
         minStake: minStake ?? BigInt(0),
 
         createTask,
@@ -206,11 +383,6 @@ export function useToDo() {
         isWithdrawSuccess,
         withdrawError,
         resetWithdraw,
-
-        refetch: () => {
-            refetchTaskCount();
-            refetchPartyFund();
-        },
     };
 }
 

@@ -103,17 +103,14 @@ export function TaskDetailModal({
     isClaiming,
     isForfeiting
 }: TaskDetailModalProps) {
-    // Lock body scroll when modal is open
     useEffect(() => {
         if (isOpen) {
-            // Save current scroll position
             const scrollY = window.scrollY;
             document.body.style.position = 'fixed';
             document.body.style.top = `-${scrollY}px`;
             document.body.style.width = '100%';
 
             return () => {
-                // Restore scroll position
                 document.body.style.position = '';
                 document.body.style.top = '';
                 document.body.style.width = '';
@@ -138,7 +135,6 @@ export function TaskDetailModal({
         <AnimatePresence>
             {isOpen && (
                 <>
-                    {/* Backdrop */}
                     <motion.div
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
@@ -147,7 +143,6 @@ export function TaskDetailModal({
                         className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50"
                     />
 
-                    {/* Modal Container - Full screen on mobile, centered on larger screens */}
                     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
                         <motion.div
                             initial={{ opacity: 0, y: 100 }}
@@ -156,15 +151,11 @@ export function TaskDetailModal({
                             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
                             className={clsx(
                                 'relative w-full bg-zinc-900 border-zinc-800 shadow-2xl overflow-hidden flex flex-col',
-                                // Mobile: bottom sheet style
                                 'max-h-[90vh] rounded-t-3xl border-t border-x',
-                                // Tablet and up: centered modal
                                 'sm:max-w-lg sm:max-h-[85vh] sm:rounded-2xl sm:border sm:mx-4',
-                                // Large screens
                                 'lg:max-w-xl'
                             )}
                         >
-                            {/* Drag Handle for Mobile */}
                             <div className="sm:hidden flex justify-center pt-3 pb-1">
                                 <div className="w-10 h-1 bg-zinc-600 rounded-full" />
                             </div>
@@ -174,7 +165,9 @@ export function TaskDetailModal({
                                 <div className="flex items-start justify-between gap-3">
                                     <div className="flex-1 min-w-0">
                                         <div className="flex items-center gap-2">
-                                            <span className="text-sm text-zinc-500">Task #{task.id.toString()}</span>
+                                            <span className="text-sm font-semibold text-purple-400 bg-purple-500/10 px-2 py-0.5 rounded-md">
+                                                {task.ownerName || 'Unknown Member'}
+                                            </span>
                                             <div
                                                 className={clsx(
                                                     'flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium',
@@ -207,7 +200,6 @@ export function TaskDetailModal({
 
                                 {/* Quick Stats Row */}
                                 <div className="grid grid-cols-2 gap-3">
-                                    {/* Staked Amount */}
                                     <div className="p-3 rounded-xl bg-zinc-800/50 border border-zinc-700/50">
                                         <div className="flex items-center gap-1.5 mb-1">
                                             <Coins className="w-3.5 h-3.5 text-emerald-400" />
@@ -219,7 +211,6 @@ export function TaskDetailModal({
                                         <span className="text-xs text-emerald-400/70 ml-1">MNT</span>
                                     </div>
 
-                                    {/* Time Remaining */}
                                     <div className="p-3 rounded-xl bg-zinc-800/50 border border-zinc-700/50">
                                         <div className="flex items-center gap-1.5 mb-1">
                                             <Clock className={clsx('w-3.5 h-3.5', isDeadlinePassed ? 'text-red-400' : 'text-zinc-400')} />
@@ -234,25 +225,6 @@ export function TaskDetailModal({
                                     </div>
                                 </div>
 
-                                {/* Owner Info */}
-                                <div className="p-3 rounded-xl bg-zinc-800/30 border border-zinc-700/50">
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex items-center gap-2">
-                                            <User className="w-4 h-4 text-zinc-400" />
-                                            <span className="text-sm text-zinc-400">Owner</span>
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                            <span className="text-sm text-white font-mono">
-                                                {task.owner.slice(0, 6)}...{task.owner.slice(-4)}
-                                            </span>
-                                            {isOwner && (
-                                                <span className="px-1.5 py-0.5 text-xs bg-green-500/20 text-green-400 rounded">
-                                                    You
-                                                </span>
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
 
                                 {/* Deadline */}
                                 <div className="p-3 rounded-xl bg-zinc-800/30 border border-zinc-700/50">

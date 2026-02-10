@@ -11,15 +11,11 @@ import {ToDo} from "../src/ToDo.sol";
  */
 contract DeployToDo is Script {
     function run() external returns (ToDo) {
-        // The deployer becomes the team lead
-        address teamLead = msg.sender;
-
         vm.startBroadcast();
 
-        ToDo todo = new ToDo(teamLead);
+        ToDo todo = new ToDo();
 
         console.log("ToDo deployed at:", address(todo));
-        console.log("Team Lead:", teamLead);
         console.log("Min Stake:", todo.MIN_STAKE());
 
         vm.stopBroadcast();

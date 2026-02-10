@@ -10,10 +10,12 @@ export interface Task {
     id: bigint;
     content: string;
     owner: `0x${string}`;
+    ownerName: string;
     stakedAmount: bigint;
     deadline: bigint;
     isCompleted: boolean;
     isVerified: boolean;
+    teamCode: `0x${string}`;
 }
 
 interface TaskCardProps {
@@ -36,12 +38,6 @@ function getTaskStatus(task: Task, isDeadlinePassed: boolean) {
     if (task.isCompleted) return { color: 'text-blue-400', bg: 'bg-blue-400/10', border: 'border-blue-400/30', icon: Clock, label: 'Awaiting Verification' };
     if (isDeadlinePassed) return { color: 'text-red-400', bg: 'bg-red-400/10', border: 'border-red-400/30', icon: AlertCircle, label: 'Failed' };
     return { color: 'text-yellow-400', bg: 'bg-yellow-400/10', border: 'border-yellow-400/30', icon: Timer, label: 'In Progress' };
-}
-
-function formatDeadline(deadline: bigint): string {
-    return new Date(Number(deadline) * 1000).toLocaleDateString('en-US', {
-        month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
-    });
 }
 
 function getTimeRemaining(deadline: bigint): string {
@@ -74,8 +70,6 @@ export function TaskCard({
     const status = getTaskStatus(task, isDeadlinePassed);
     const StatusIcon = status.icon;
 
-    const truncateAddress = (addr: string) => `${addr.slice(0, 6)}...${addr.slice(-4)}`;
-
     const canComplete = isOwner && !task.isCompleted && !isDeadlinePassed;
     const canVerify = isTeamLead && task.isCompleted && !task.isVerified;
     const canClaim = isOwner && task.isVerified && task.stakedAmount > BigInt(0) && !isDeadlinePassed;
@@ -97,11 +91,13 @@ export function TaskCard({
                 'group relative p-4 rounded-xl border transition-all duration-300 cursor-pointer',
                 'bg-zinc-900/60 backdrop-blur-sm border-zinc-800/80',
                 'hover:border-zinc-700 hover:bg-zinc-900/90',
-                'h-[120px] flex flex-col'
+                'h-[130px] flex flex-col'
             )}
         >
             <div className="flex items-center justify-between gap-2 mb-2">
-                <span className="text-xs text-zinc-500">Task #{task.id.toString()}</span>
+                <span className="text-xs font-semibold text-purple-400 bg-purple-500/10 px-2 py-0.5 rounded-md">
+                    {task.ownerName || 'Unknown Member'}
+                </span>
 
                 <div className="flex items-center gap-2">
                     {canComplete && (
@@ -173,12 +169,6 @@ export function TaskCard({
             </h3>
 
             <div className="flex items-center gap-4 text-xs mt-2">
-                <div className="flex items-center gap-1 text-zinc-400">
-                    <User className="w-3.5 h-3.5" />
-                    <span>{truncateAddress(task.owner)}</span>
-                    {isOwner && <span className="px-1 py-0.5 text-[10px] bg-green-500/20 text-green-400 rounded">You</span>}
-                </div>
-
                 <div className="flex items-center gap-1 text-emerald-400">
                     <Coins className="w-3.5 h-3.5" />
                     <span className="font-medium">{formatEther(task.stakedAmount)} MNT</span>
