@@ -1,7 +1,6 @@
 import { connectorsForWallets } from '@rainbow-me/rainbowkit';
 import {
   injectedWallet,
-  rainbowWallet,
   walletConnectWallet,
 } from '@rainbow-me/rainbowkit/wallets';
 import { createConfig, http } from 'wagmi';
@@ -35,10 +34,9 @@ const projectId = process.env.NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID || 'YOUR_PRO
 const connectors = connectorsForWallets(
   [
     {
-      groupName: 'Recommended',
+      groupName: 'Connect',
       wallets: [
         injectedWallet,
-        rainbowWallet,
         walletConnectWallet,
       ],
     },
@@ -49,12 +47,13 @@ const connectors = connectorsForWallets(
   }
 );
 
-// Minimal Wagmi configuration
+// Wagmi configuration with multi-wallet detection
 export const config = createConfig({
   connectors,
   chains: [mantleSepolia],
   transports: {
     [mantleSepolia.id]: http(),
   },
+  multiInjectedProviderDiscovery: true,
   ssr: true,
 });
