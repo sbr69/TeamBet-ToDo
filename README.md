@@ -1,6 +1,7 @@
 # 🎯 Micro-Incentive To-Do List for Teams
 
 > **Live:** [teambet-todo.is-a.software](https://teambet-todo.is-a.software) • [team-bet-to-do.vercel.app](https://team-bet-to-do.vercel.app)
+
 A decentralized task management application built on **Mantle Blockchain** that gamifies productivity through crypto staking. Team members stake MNT tokens on their tasks — complete on time to get your stake back, or fund the team party!
 
 ![Mantle](https://img.shields.io/badge/Mantle-Sepolia-blue?style=for-the-badge)
